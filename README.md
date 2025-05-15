@@ -20,4 +20,5 @@ Una vez que los servicios estén en funcionamiento, puedes acceder a los siguien
 
   ![Swagger UI](https://github.com/user-attachments/assets/f1b24f4e-6735-4df1-a4f7-7e03ed75ba2e)
 
-
+## 🚀 Video de explicación y demostración
+https://1drv.ms/v/c/367661b49ea74967/EVXkn3nAentEq3j5tq1wUj4BpSsWcZ0LdJoE25_PA37p-g?e=jzJs2d
