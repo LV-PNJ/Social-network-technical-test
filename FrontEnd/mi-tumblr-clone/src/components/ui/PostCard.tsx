@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Card,
@@ -11,18 +11,15 @@ import {
   Box,
   Menu,
   MenuItem,
-  TextField,
-  Button,
 } from '@mui/material'
 import {
   Favorite as FavoriteIcon,
   FavoriteBorder as FavoriteBorderIcon,
   MoreVert as MoreVertIcon,
-  Comment as CommentIcon,
 } from '@mui/icons-material'
 import { Post } from '@/types/post'
-import { useAuth } from '@/context/AuthContext'
-import { likePost, unlikePost, createComment } from '@/features/posts/services/postService'
+import { UseAuth } from '@/context/AuthContext'
+import { useLikePostMutation, useUnlikePostMutation } from '@/features/posts/postApiSlice'
 
 interface PostCardProps {
   post: Post
@@ -31,15 +28,19 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
-  const { user } = useAuth()
+  const { user } = UseAuth()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [showComments, setShowComments] = useState(false)
-  const [comment, setComment] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [localPost, setLocalPost] = useState(post)
 
-  const isLiked = user ? localPost.likes.includes(user.id) : false
-  const isAuthor = user ? localPost.author.id === user.id : false
+  const [likePostMutation, { isLoading: isLiking }] = useLikePostMutation();
+  const [unlikePostMutation, { isLoading: isUnliking }] = useUnlikePostMutation();
+
+  useEffect(() => {
+    setLocalPost(post);
+  }, [post]);
+
+  const isLiked = user && localPost.likedBy ? localPost.likedBy.includes(user.id) : false
+  const isAuthor = user && localPost.user ? localPost.user.id === user.id : false
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -64,34 +65,30 @@ export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
   }
 
   const handleLikeClick = async () => {
-    if (!user) return
+    if (!user || isLiking || isUnliking) return
 
-    try {
-      const updatedPost = isLiked
-        ? await unlikePost(localPost.id)
-        : await likePost(localPost.id)
-      setLocalPost(updatedPost)
-    } catch (error) {
-      console.error('Failed to update like:', error)
+    const originalPost = { ...localPost };
+    const newLikedBy = [...(localPost.likedBy || [])];
+    let newLikesCount = localPost.likesCount || 0;
+
+    if (isLiked) {
+      const userIndex = newLikedBy.indexOf(user.id);
+      if (userIndex > -1) newLikedBy.splice(userIndex, 1);
+      newLikesCount = Math.max(0, newLikesCount - 1);
+    } else {
+      if (!newLikedBy.includes(user.id)) newLikedBy.push(user.id);
+      newLikesCount += 1;
     }
-  }
+    setLocalPost({ ...localPost, likedBy: newLikedBy, likesCount: newLikesCount });
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user || !comment.trim() || isSubmitting) return
-
-    setIsSubmitting(true)
     try {
-      const updatedPost = await createComment({
-        postId: localPost.id,
-        content: comment,
-      })
-      setLocalPost(updatedPost)
-      setComment('')
+      const updatedPostFromServer = isLiked
+        ? await unlikePostMutation(localPost.id).unwrap()
+        : await likePostMutation(localPost.id).unwrap();
+      setLocalPost(updatedPostFromServer);
     } catch (error) {
-      console.error('Failed to add comment:', error)
-    } finally {
-      setIsSubmitting(false)
+      console.error('Failed to update like:', error);
+      setLocalPost(originalPost);
     }
   }
 
@@ -101,15 +98,15 @@ export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
         avatar={
           <Avatar
             component={Link}
-            to={`/profile/${localPost.author.username}`}
-            src={localPost.author.avatar}
-            alt={localPost.author.username}
+            to={`/profile/${localPost.user?.username || ''}`}
+            src={localPost.user?.avatar}
+            alt={localPost.user?.username}
           />
         }
         action={
           isAuthor && (
             <>
-              <IconButton aria-label="settings" onClick={handleMenuClick}>
+              <IconButton aria-label="settings" onClick={handleMenuClick} disabled={isLiking || isUnliking}>
                 <MoreVertIcon />
               </IconButton>
               <Menu
@@ -125,10 +122,10 @@ export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
         }
         title={
           <Link
-            to={`/profile/${localPost.author.username}`}
+            to={`/profile/${localPost.user?.username || ''}`}
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
-            {localPost.author.username}
+            {localPost.user?.username}
           </Link>
         }
         subheader={new Date(localPost.createdAt).toLocaleDateString()}
@@ -150,69 +147,13 @@ export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
         <Typography variant="body1">{localPost.content}</Typography>
       </CardContent>
       <CardActions disableSpacing>
-        <IconButton onClick={handleLikeClick} color={isLiked ? 'primary' : 'default'}>
+        <IconButton onClick={handleLikeClick} color={isLiked ? 'primary' : 'default'} disabled={isLiking || isUnliking}>
           {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
         </IconButton>
         <Typography variant="body2" color="text.secondary">
-          {localPost.likes.length}
-        </Typography>
-        <IconButton onClick={() => setShowComments(!showComments)}>
-          <CommentIcon />
-        </IconButton>
-        <Typography variant="body2" color="text.secondary">
-          {localPost.comments.length}
+          {localPost.likesCount}
         </Typography>
       </CardActions>
-
-      {showComments && (
-        <Box sx={{ p: 2, pt: 0 }}>
-          {user && (
-            <Box component="form" onSubmit={handleCommentSubmit} sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Add a comment..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                disabled={isSubmitting}
-              />
-              <Button
-                type="submit"
-                variant="contained"
-                size="small"
-                sx={{ mt: 1 }}
-                disabled={!comment.trim() || isSubmitting}
-              >
-                {isSubmitting ? 'Posting...' : 'Post'}
-              </Button>
-            </Box>
-          )}
-
-          {localPost.comments.map((comment) => (
-            <Box key={comment.id} sx={{ mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                <Avatar
-                  component={Link}
-                  to={`/profile/${comment.author.username}`}
-                  src={comment.author.avatar}
-                  sx={{ width: 24, height: 24, mr: 1 }}
-                />
-                <Typography
-                  component={Link}
-                  to={`/profile/${comment.author.username}`}
-                  variant="subtitle2"
-                  sx={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  {comment.author.username}
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ ml: 4 }}>
-                {comment.content}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
     </Card>
   )
 } 

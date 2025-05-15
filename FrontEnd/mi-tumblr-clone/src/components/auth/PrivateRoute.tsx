@@ -1,12 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Box, CircularProgress } from '@mui/material'
-import { useAuth } from '@/context/AuthContext'
+import { UseAuth } from '@/context/AuthContext'
 
 export default function PrivateRoute() {
-  const { user, loading } = useAuth()
+  const { currentUser, isLoading } = UseAuth()
   const location = useLocation()
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Box
         sx={{
@@ -20,8 +20,9 @@ export default function PrivateRoute() {
       </Box>
     )
   }
+    console.log("dsd",currentUser)
+  if (!currentUser) {
 
-  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

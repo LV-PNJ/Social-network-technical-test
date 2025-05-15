@@ -16,10 +16,10 @@ import {
   AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material'
-import { useAuth } from '@/context/AuthContext'
+import { UseAuth } from '@/context/AuthContext'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, logout } = UseAuth()
   const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 

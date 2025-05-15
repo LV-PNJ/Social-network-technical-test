@@ -51,7 +51,13 @@ export const validatePostInput = async (req: Request, res: Response, next: NextF
 
 export const validatePostExists = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const postId = +req.params.id;
+    const postId = req.params.id || req.params.postId;
+    if (!postId) {
+        return res.status(400).json(
+            formatResponse(400, errorFormat({ status: 400, message: 'Post ID is required' }))
+        );
+    }
+
     const post = await AppDataSource.getRepository(Post).findOne({
       where: { id: postId },
       relations: ['user']
@@ -63,7 +69,6 @@ export const validatePostExists = async (req: Request, res: Response, next: Next
       );
     }
 
-    // Adjuntar el post a la request para usarlo en otros middlewares/controllers
     req.post = post;
     next();
   } catch (error) {

@@ -1,12 +1,10 @@
-// src/App.tsx
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box } from '@mui/material';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/auth/ProfilePage';
 import CreatePostPage from './pages/CreatePostPage';
 import EditPostPage from './pages/EditPostPage';
 import NotFoundPage from './pages/NotFoundPage';

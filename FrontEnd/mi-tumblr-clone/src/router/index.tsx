@@ -4,15 +4,15 @@ import type { ReactElement } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import HomePage from '../pages/HomePage';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import ProfilePage from '../pages/ProfilePage';
+import LoginPage from '../pages/auth/LoginPage';
+import RegisterPage from '../pages/auth/RegisterPage';
+import ProfilePage from '../pages/auth/ProfilePage';
 import NotFoundPage from '../pages/NotFoundPage';
-import { useAuth } from '../context/AuthContext';
+import { UseAuth } from '../context/AuthContext';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
-  const { currentUser } = useAuth();
+  const { currentUser } = UseAuth();
   return currentUser ? children : <Navigate to="/login" replace />;
 };
 
@@ -28,11 +28,6 @@ const AppRoutes: React.FC = () => {
           path: 'profile/:userId',
           element: <ProfilePage />,
         },
-        // Ruta protegida de ejemplo
-        // {
-        //   path: 'dashboard',
-        //   element: <ProtectedRoute><DashboardPage /></ProtectedRoute>,
-        // },
         { path: '*', element: <NotFoundPage /> },
       ],
     },

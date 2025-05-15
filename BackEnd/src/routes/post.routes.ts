@@ -5,7 +5,8 @@ import {
   getPost,
   updatePost,
   deletePost,
-  likePost 
+  likePost,
+  unlikePost
 } from '../controllers/post.controller';
 import { validatePostInput, validatePostExists, checkPostOwnership } from '../middlewares/post.middleware';
 import { verifyToken } from '../middlewares/auth.middleware';
@@ -298,5 +299,44 @@ router.delete('/:id', verifyToken, validatePostExists, checkPostOwnership, delet
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/:id/like', verifyToken, validatePostExists, likePost);
+
+/**
+ * @openapi
+ * /posts/{id}/like:
+ *   delete:
+ *     tags:
+ *       - Posts
+ *     summary: Unlike a post
+ *     description: Decrement the like counter of a post
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post unliked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostResponse'
+ *       401:
+ *         description: Unauthorized - Token missing or invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Post not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete('/:id/like', verifyToken, validatePostExists, unlikePost);
 
 export default router; 

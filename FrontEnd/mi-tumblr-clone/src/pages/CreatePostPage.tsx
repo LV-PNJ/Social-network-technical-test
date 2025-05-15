@@ -9,17 +9,18 @@ import {
   Alert,
   IconButton,
   Stack,
+  CircularProgress
 } from '@mui/material'
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material'
-import { createPost } from '@/features/posts/services/postService'
+import { useCreatePostMutation } from '@/features/posts/postApiSlice'
 
 export default function CreatePostPage() {
   const navigate = useNavigate()
   const [content, setContent] = useState('')
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+
+  const [createPost, { isLoading, error: mutationError }] = useCreatePostMutation();
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -30,36 +31,38 @@ export default function CreatePostPage() {
         setImagePreview(reader.result as string)
       }
       reader.readAsDataURL(file)
+    } else {
+      setImage(null);
+      setImagePreview(null);
     }
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (!content.trim()) return
-
-    setLoading(true)
-    setError('')
+    if (!content.trim()) {
+      alert('Content cannot be empty.');
+      return;
+    }
 
     try {
-      let imageUrl = ''
+      let imageUrlToSubmit: string | undefined = undefined;
       if (image) {
-        // In a real app, you would upload the image to a storage service
-        // and get back the URL. This is just a placeholder.
-        imageUrl = URL.createObjectURL(image)
+        imageUrlToSubmit = imagePreview || undefined;
+         console.warn("Using placeholder image URL logic. Implement proper image upload and URL handling.");
       }
 
       await createPost({
         content: content.trim(),
-        imageUrl,
-      })
+        imageUrl: imageUrlToSubmit,
+      }).unwrap();
 
       navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create post')
-    } finally {
-      setLoading(false)
+      console.error('Failed to create post:', err);
     }
   }
+  
+  const displayError = (mutationError as any)?.data?.message || (mutationError as any)?.error;
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', py: 3 }}>
@@ -68,9 +71,9 @@ export default function CreatePostPage() {
           Create Post
         </Typography>
 
-        {error && (
+        {displayError && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {typeof displayError === 'string' ? displayError : JSON.stringify(displayError)}
           </Alert>
         )}
 
@@ -83,6 +86,7 @@ export default function CreatePostPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             sx={{ mb: 2 }}
+            disabled={isLoading}
           />
 
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
@@ -90,6 +94,7 @@ export default function CreatePostPage() {
               component="label"
               variant="outlined"
               startIcon={<PhotoCameraIcon />}
+              disabled={isLoading}
             >
               Add Photo
               <input
@@ -97,6 +102,7 @@ export default function CreatePostPage() {
                 accept="image/*"
                 hidden
                 onChange={handleImageChange}
+                disabled={isLoading}
               />
             </Button>
             {image && (
@@ -125,11 +131,11 @@ export default function CreatePostPage() {
             <Button
               type="submit"
               variant="contained"
-              disabled={!content.trim() || loading}
+              disabled={!content.trim() || isLoading}
             >
-              {loading ? 'Posting...' : 'Post'}
+              {isLoading ? <CircularProgress size={24} /> : 'Post'}
             </Button>
-            <Button variant="outlined" onClick={() => navigate('/')}>
+            <Button variant="outlined" onClick={() => navigate('/')} disabled={isLoading}>
               Cancel
             </Button>
           </Box>

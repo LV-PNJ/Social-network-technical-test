@@ -7,13 +7,6 @@ import { errorFormat } from "../helpers/errors";
 import { validate } from "class-validator";
 import jwt from "jsonwebtoken";
 // Extend Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
-}
 
 export const validateRegisterInput = async (
   req: Request,
@@ -21,15 +14,15 @@ export const validateRegisterInput = async (
   next: NextFunction
 ) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, displayName } = req.body;
 
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !displayName) {
       return res.status(400).json(
         formatResponse(
           400,
           errorFormat({
             status: 400,
-            message: "Username, email and password are required",
+            message: "Username, email name and password are required",
           })
         )
       );
@@ -96,9 +89,9 @@ export const validateLoginInput = async (
   next: NextFunction
 ) => {
   try {
-    const { username, email, password } = req.body;
+    const { user, password } = req.body;
 
-    if ((!username && !email) || !password) {
+    if ((!user) || !password) {
       return res.status(400).json(
         formatResponse(
           400,
@@ -110,11 +103,13 @@ export const validateLoginInput = async (
       );
     }
 
-    const user = await AppDataSource.getRepository(User).findOne({
-      where: [{ username }, { email }],
-    });
+    const userX = await AppDataSource.getRepository(User)
+      .createQueryBuilder("user")
+      .where("username = :user OR email = :user", { user })
+      .getOne();
 
-    if (!user) {
+    console.log("User found:", userX);
+    if (!userX) {
       return res
         .status(401)
         .json(
@@ -125,7 +120,7 @@ export const validateLoginInput = async (
         );
     }
 
-    const valid = await user.verifyPassword(password);
+    const valid = await userX.verifyPassword(password);
     if (!valid) {
       return res
         .status(401)

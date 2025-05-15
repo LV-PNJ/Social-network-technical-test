@@ -1,7 +1,7 @@
 // src/features/posts/components/PostItem.tsx
 import React, { useState } from 'react';
 import type { Post, Comment as CommentType } from '../../../utils';
-import { useAuth } from '../../../context/AuthContext';
+import { UseAuth } from '../../../context/AuthContext';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Link } from 'react-router-dom';
@@ -13,7 +13,7 @@ interface PostItemProps {
 }
 
 const PostItem: React.FC<PostItemProps> = ({ post, onLike, onAddComment }) => {
-  const { currentUser } = useAuth();
+  const { currentUser } = UseAuth();
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
 

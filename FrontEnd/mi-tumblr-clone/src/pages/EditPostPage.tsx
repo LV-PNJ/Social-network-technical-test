@@ -11,99 +11,110 @@ import {
   Stack,
 } from '@mui/material'
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material'
-import { getPost, updatePost } from '@/features/posts/services/postService'
-import { useAuth } from '@/context/AuthContext'
+import { useGetPostByIdQuery, useUpdatePostMutation } from '@/features/posts/postApiSlice'
+import { UseAuth } from '@/context/AuthContext'
 
 export default function EditPostPage() {
   const { postId } = useParams<{ postId: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user: currentUser } = UseAuth()
+  
   const [content, setContent] = useState('')
-  const [image, setImage] = useState<File | null>(null)
+  const [newImageFile, setNewImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null | undefined>(undefined)
+  
+  const { data: postData, isLoading: isLoadingPost, error: fetchError, refetch } = useGetPostByIdQuery(postId!, {
+    skip: !postId,
+  });
+
+  const [updatePost, { isLoading: isUpdating, error: updateMutationError }] = useUpdatePostMutation();
 
   useEffect(() => {
-    const fetchPost = async () => {
-      if (!postId) return
-
-      try {
-        const post = await getPost(postId)
-        if (post.author.id !== user?.id) {
-          navigate('/')
-          return
-        }
-        setContent(post.content)
-        if (post.imageUrl) {
-          setCurrentImageUrl(post.imageUrl)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch post')
-      } finally {
-        setLoading(false)
+    if (postData) {
+      if (postData.user?.id !== currentUser?.id) {
+        alert("You are not authorized to edit this post.");
+        navigate('/');
+        return;
       }
+      setContent(postData.content);
+      setExistingImageUrl(postData.imageUrl);
+      setImagePreview(null);
+      setNewImageFile(null);
     }
-
-    fetchPost()
-  }, [postId, user, navigate])
+  }, [postData, currentUser, navigate]);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      setImage(file)
-      const reader = new FileReader()
+      setNewImageFile(file);
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-      setCurrentImageUrl(null)
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setExistingImageUrl(null);
+    } else {
+      setNewImageFile(null);
+      setImagePreview(null);
     }
-  }
+  };
+
+  const handleRemoveImage = () => {
+    setNewImageFile(null);
+    setImagePreview(null);
+    setExistingImageUrl(null);
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    if (!postId || !content.trim()) return
+    event.preventDefault();
+    if (!postId || !content.trim()) return;
 
-    setSaving(true)
-    setError('')
+    let imageUrlToUpdate: string | null | undefined = existingImageUrl;
+    if (newImageFile) {
+      console.warn("Image upload not implemented. Using placeholder logic for new image.");
+      imageUrlToUpdate = imagePreview;
+    } else if (existingImageUrl === null && imagePreview === null) {
+      imageUrlToUpdate = null;
+    }
 
     try {
-      let imageUrl = currentImageUrl
-      if (image) {
-        // In a real app, you would upload the image to a storage service
-        // and get back the URL. This is just a placeholder.
-        imageUrl = URL.createObjectURL(image)
-      }
-
-      await updatePost(postId, {
-        content: content.trim(),
-        imageUrl,
-      })
-
-      navigate('/')
+      await updatePost({
+        postId,
+        data: {
+          content: content.trim(),
+          imageUrl: imageUrlToUpdate,
+        },
+      }).unwrap();
+      navigate(`/`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update post')
-      setSaving(false)
+      console.error('Failed to update post:', err);
     }
-  }
+  };
 
-  if (loading) {
+  if (isLoadingPost) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-        }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
       </Box>
-    )
+    );
   }
+
+  if (fetchError) {
+    const errorMessage = (fetchError as any)?.data?.message || (fetchError as any)?.error || 'Failed to load post for editing.';
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', flexDirection: 'column' }}>
+            <Typography color="error">Error: {errorMessage}</Typography>
+            <Button onClick={() => refetch()}>Try Again</Button>
+        </Box>
+    );
+  }
+  
+  if (!postData) {
+    return <Typography>Post not found or you do not have permission.</Typography>;
+  }
+  
+  const displayUpdateError = (updateMutationError as any)?.data?.message || (updateMutationError as any)?.error;
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', py: 3 }}>
@@ -112,9 +123,9 @@ export default function EditPostPage() {
           Edit Post
         </Typography>
 
-        {error && (
+        {displayUpdateError && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {typeof displayUpdateError === 'string' ? displayUpdateError : JSON.stringify(displayUpdateError)}
           </Alert>
         )}
 
@@ -127,6 +138,7 @@ export default function EditPostPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             sx={{ mb: 2 }}
+            disabled={isUpdating}
           />
 
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
@@ -134,59 +146,37 @@ export default function EditPostPage() {
               component="label"
               variant="outlined"
               startIcon={<PhotoCameraIcon />}
+              disabled={isUpdating}
             >
               Change Photo
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleImageChange}
-              />
+              <input type="file" accept="image/*" hidden onChange={handleImageChange} disabled={isUpdating} />
             </Button>
-            {(image || currentImageUrl) && (
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                  setImage(null)
-                  setImagePreview(null)
-                  setCurrentImageUrl(null)
-                }}
-              >
+            {(newImageFile || existingImageUrl) && (
+              <Button variant="outlined" color="error" onClick={handleRemoveImage} disabled={isUpdating}>
                 Remove Photo
               </Button>
             )}
           </Stack>
 
-          {(imagePreview || currentImageUrl) && (
+          {(imagePreview || existingImageUrl) && (
             <Box
               component="img"
-              src={imagePreview || currentImageUrl}
+              src={imagePreview || existingImageUrl}
               alt="Preview"
-              sx={{
-                width: '100%',
-                maxHeight: 300,
-                objectFit: 'cover',
-                borderRadius: 1,
-                mb: 2,
-              }}
+              sx={{ width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 1, mb: 2 }}
             />
           )}
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={!content.trim() || saving}
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
+            <Button type="submit" variant="contained" disabled={!content.trim() || isUpdating}>
+              {isUpdating ? <CircularProgress size={24} /> : 'Save Changes'}
             </Button>
-            <Button variant="outlined" onClick={() => navigate('/')}>
+            <Button variant="outlined" onClick={() => navigate('/')} disabled={isUpdating}>
               Cancel
             </Button>
           </Box>
         </Box>
       </Paper>
     </Box>
-  )
+  );
 } 

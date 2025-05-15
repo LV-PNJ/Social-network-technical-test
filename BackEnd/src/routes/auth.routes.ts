@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { login, register } from '../controllers/auth.controller';
-import { validateRegisterInput, validateLoginInput } from '../middlewares/auth.middleware';
+import { login, register, getMe } from '../controllers/auth.controller';
+import { validateRegisterInput, validateLoginInput, verifyToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -110,5 +110,31 @@ router.post('/register', validateRegisterInput, register);
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/login', validateLoginInput, login);
+
+/**
+ * @openapi
+ * /auth/me:
+ *   get:
+ *     tags:
+ *       - Authentication
+ *     summary: Get current user
+ *     description: Get the currently authenticated user's information
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - Token missing or invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/me', verifyToken, getMe);
 
 export default router; 

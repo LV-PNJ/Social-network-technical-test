@@ -1,126 +1,62 @@
-// src/pages/HomePage.tsx
-import React, { useState, useEffect } from 'react';
-import PostList from '../features/posts/components/PostList';
+
+import React from 'react';
 import CreatePostForm from '../features/posts/components/CreatePostForm';
-import { mockPosts, mockUsers } from '../data/mockData'; // Usaremos los mocks
-import type { Post, User, Comment as CommentType } from '../utils';
-import { useAuth } from '../context/AuthContext';
+import { UseAuth } from '../context/AuthContext';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import PostCard from '@/components/ui/PostCard';
-import { getPosts } from '@/features/posts/services/postService';
+import { useGetPostsQuery, useDeletePostMutation } from '@/features/posts/postApiSlice'; // RTK Query hook
+import { Post } from '@/types/post'; 
+import { useNavigate } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
-  const { currentUser } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { currentUser } = UseAuth();
+  const navigate = useNavigate();
+  
+  // Use RTK Query hook to fetch posts
+  const { 
+    data: posts, 
+    isLoading, 
+    isError, 
+    error 
+  } = useGetPostsQuery();
 
-  useEffect(() => {
-    const fetchPosts = async () => {
+  const [deletePost] = useDeletePostMutation();
+
+  const handleEditPost = (postToEdit: Post) => {
+    navigate(`/edit-post/${postToEdit.id}`);
+  };
+
+  const handleDeletePost = async (postToDelete: Post) => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        const data = await getPosts();
-        setPosts(data);
+        await deletePost(postToDelete.id).unwrap();
+        // List will update due to tag invalidation
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load posts');
-      } finally {
-        setLoading(false);
+        console.error('Failed to delete post:', err);
+        alert(`Failed to delete post: ${(err as any)?.data?.message || (err as any)?.error || 'Unknown error'}`);
       }
-    };
-
-    fetchPosts();
-  }, []);
-
-  const handleAddPost = (postData: Omit<Post, 'id' | 'author' | 'likes' | 'comments' | 'createdAt' | 'userId'> & { type: Post['type'] }) => {
-    if (!currentUser) return;
-
-    const newPost: Post = {
-      id: `post${Date.now()}`, // ID único simple
-      userId: currentUser.id,
-      author: currentUser,
-      ...postData,
-      likes: [],
-      comments: [],
-      createdAt: new Date(),
-    };
-    // Añadir al inicio de la lista para verla primero
-    setPosts(prevPosts => [newPost, ...prevPosts]);
-    mockPosts.unshift(newPost); // Actualizar el mock (no persistirá en recargas sin backend)
-  };
-
-  const handleLikePost = (postId: string) => {
-    if (!currentUser) return;
-    setPosts(prevPosts =>
-      prevPosts.map(p => {
-        if (p.id === postId) {
-          const alreadyLiked = p.likes.includes(currentUser.id);
-          return {
-            ...p,
-            likes: alreadyLiked
-              ? p.likes.filter(userId => userId !== currentUser.id)
-              : [...p.likes, currentUser.id],
-          };
-        }
-        return p;
-      })
-    );
-    // Actualizar mockData (para consistencia si se navega y vuelve)
-    const postIndex = mockPosts.findIndex(p => p.id === postId);
-    if (postIndex > -1) {
-        const alreadyLiked = mockPosts[postIndex].likes.includes(currentUser.id);
-        mockPosts[postIndex].likes = alreadyLiked
-            ? mockPosts[postIndex].likes.filter(userId => userId !== currentUser.id)
-            : [...mockPosts[postIndex].likes, currentUser.id];
     }
   };
 
-  const handleAddComment = (postId: string, commentText: string) => {
-    if (!currentUser) return;
-    const newComment: CommentType = {
-      id: `comment${Date.now()}`,
-      userId: currentUser.id,
-      username: currentUser.username,
-      text: commentText,
-      createdAt: new Date(),
-    };
+  // Removed manual useEffect for fetching, handleAddPost, handleLikePost, handleAddComment
 
-    setPosts(prevPosts =>
-      prevPosts.map(p =>
-        p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p
-      )
-    );
-    // Actualizar mockData
-    const postIndex = mockPosts.findIndex(p => p.id === postId);
-    if (postIndex > -1) {
-        mockPosts[postIndex].comments.push(newComment);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-        }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (error) {
+  if (isError) {
+    const errorMessage = (error as any)?.data?.message || (error as any)?.error || 'Failed to load posts.';
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-        }}
-      >
-        <Typography color="error">{error}</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', flexDirection: 'column' }}>
+        <Typography color="error">Error: {errorMessage}</Typography>
+        {/* Optionally, add a refetch button if your hook supports it or use refetch from the hook
+            const { refetch } = useGetPostsQuery(); 
+            <Button onClick={() => refetch()}>Try Again</Button> 
+        */}
       </Box>
     );
   }
@@ -128,13 +64,21 @@ const HomePage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">Inicio</h1>
-      {currentUser && <CreatePostForm onAddPost={handleAddPost} />}
-      {posts.length === 0 ? (
-        <Typography variant="h6" textAlign="center" color="text.secondary">
+      {currentUser && <CreatePostForm />}
+      
+      {(!posts || posts.length === 0) && !isLoading ? (
+        <Typography variant="h6" textAlign="center" color="text.secondary" sx={{ mt: 4 }}>
           No posts yet. Be the first to create one!
         </Typography>
       ) : (
-        posts.map((post) => <PostCard key={post.id} post={post} />)
+        posts?.map((post) => (
+          <PostCard 
+            key={post.id} 
+            post={post} 
+            onEdit={handleEditPost} 
+            onDelete={handleDeletePost} 
+          />
+        ))
       )}
     </div>
   );

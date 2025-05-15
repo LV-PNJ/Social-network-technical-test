@@ -1,14 +1,14 @@
 // src/layouts/MainLayout.tsx
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { UseAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import { Box, Container } from '@mui/material';
 import Navbar from '@/components/ui/Navbar';
 import Sidebar from '@/components/ui/Sidebar';
 
 const MainLayout: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout } = UseAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {

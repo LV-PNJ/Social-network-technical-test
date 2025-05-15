@@ -1,7 +1,7 @@
 
 // src/features/posts/components/CreatePostForm.tsx
 import React, { useState } from 'react';
-import { useAuth } from '../../../context/AuthContext';
+import { UseAuth } from '../../../context/AuthContext';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import type { Post } from '../../../utils'; // Asegúrate que Post incluye 'type'
@@ -11,7 +11,7 @@ interface CreatePostFormProps {
 }
 
 const CreatePostForm: React.FC<CreatePostFormProps> = ({ onAddPost }) => {
-  const { currentUser } = useAuth();
+  const { currentUser } = UseAuth();
   const [postType, setPostType] = useState<Post['type']>('text');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');

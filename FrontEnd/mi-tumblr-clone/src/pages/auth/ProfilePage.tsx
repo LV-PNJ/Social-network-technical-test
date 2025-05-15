@@ -2,15 +2,15 @@
 // src/pages/ProfilePage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { User, Post } from '../utils';
-import { mockUsers, mockPosts } from '../data/mockData';
-import PostList from '../features/posts/components/PostList';
-import { useAuth } from '../context/AuthContext';
+import type { User, Post } from '../../utils';
+import { mockUsers, mockPosts } from '../../data/mockData';
+import PostList from '../../features/posts/components/PostList';
+import { UseAuth } from '../../context/AuthContext';
 
 
 const ProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const { currentUser } = useAuth(); // Para el manejo de likes y comentarios
+  const { currentUser } = UseAuth(); // Para el manejo de likes y comentarios
   const [user, setUser] = useState<User | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
 

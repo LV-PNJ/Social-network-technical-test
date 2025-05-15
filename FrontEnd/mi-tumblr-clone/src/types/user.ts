@@ -1,18 +1,19 @@
 export interface User {
-  id: string
-  username: string
-  email: string
-  displayName?: string
-  avatar?: string
-  bio?: string
-  following?: string[]
-  followers?: string[]
-  createdAt: string
-  updatedAt: string
+  id?: string | null;
+  username?: string | null;
+  email?: string | null;
+  displayName?: string | null;
+  avatar?: string | null;
+  bio?: string | null;
+  following?: string[] | null;
+  followers?: string[] | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
+
 export interface UserLoginData {
-  email: string
+  user: string
   password: string
 }
 

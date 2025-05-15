@@ -3,6 +3,10 @@ import { User } from '@/types/user'
 const USER_STORAGE_KEY = 'devx_user'
 const TOKEN_STORAGE_KEY = 'devx_token'
 
+export const storeUser = (user: any) => {
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+};
+
 export function getStoredUser(): User | null {
   const userJson = localStorage.getItem(USER_STORAGE_KEY)
   return userJson ? JSON.parse(userJson) : null
