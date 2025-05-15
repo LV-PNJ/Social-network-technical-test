@@ -1,8 +1,9 @@
-FROM node:21.7.3-slim
+FROM node:21.7.3
 
+# Configura zona horaria
 ENV TZ=America/Bogota
 
-# Instala tzdata para manejar zona horaria
+# Instala tzdata
 RUN apt-get update && \
     apt-get install -y tzdata && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
@@ -10,15 +11,13 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copia y instala dependencias
 COPY package*.json ./
 RUN npm install
 
 COPY . .
 
-EXPOSE 8876
+EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host"]

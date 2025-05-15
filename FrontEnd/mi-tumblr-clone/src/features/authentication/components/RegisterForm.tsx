@@ -5,7 +5,6 @@ import {
   TextField,
   Button,
   Link,
-  Paper,
   Alert,
   CircularProgress,
 } from '@mui/material';
@@ -13,7 +12,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useRegisterUserMutation } from '@/features/authentication/services/userApiSlice';
 import { UserRegistrationData } from '@/types/user';
 import { setStoredToken, setStoredUser } from '@/utils/storage';
-import { UseAuth } from '@/context/AuthContext';
+import { UseAuth } from '@/hooks/UseAuth'; 
 
 export default function RegisterForm() {
   const navigate = useNavigate();
@@ -62,7 +61,7 @@ export default function RegisterForm() {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+    <>
       <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
         Sign up for DevX
       </Typography>
@@ -93,7 +92,6 @@ export default function RegisterForm() {
           label="Username"
           name="username"
           autoComplete="username"
-          autoFocus
           disabled={isLoading}
         />
         <TextField
@@ -143,6 +141,6 @@ export default function RegisterForm() {
           </Link>
         </Box>
       </Box>
-    </Paper>
+    </>
   );
 }

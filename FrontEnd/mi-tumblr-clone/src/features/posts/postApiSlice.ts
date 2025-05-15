@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Post, CreatePostData, UpdatePostData } from '../../types/post';
 import { getStoredToken } from '@/utils/storage'; 
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8876/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const postApiSlice = createApi({
   reducerPath: 'postApi',
@@ -84,21 +84,21 @@ export const postApiSlice = createApi({
         }
         throw new Error(response.data?.message || 'Failed to update post');
       },
-      invalidatesTags: (result, error, { postId }) => [{ type: 'Post', id: postId }],
+      invalidatesTags: ({ postId }) => [{ type: 'Post', id: postId }],
     }),
     deletePost: builder.mutation<{ success: boolean; id: string }, string>({
       query: (postId) => ({
         url: `posts/${postId}`,
         method: 'DELETE',
       }),
-      transformResponse: (response: any, meta, arg) => {
+      transformResponse: (response: any) => {
         // Backend returns { statusCode, ..., data: { message, postId } }
         if (response.data) {
             return { success: true };
         }
         throw new Error(response.data?.message || 'Failed to delete post');
       },
-      invalidatesTags: (result, error, id) => [{ type: 'Post', id }, { type: 'Post', id: 'LIST' } /*, { type: 'UserPosts', id: 'ME' } */ ],
+      invalidatesTags: (id) => [{ type: 'Post', id }, { type: 'Post', id: 'LIST' } /*, { type: 'UserPosts', id: 'ME' } */ ],
     }),
     likePost: builder.mutation<Post, string>({
       query: (postId) => ({

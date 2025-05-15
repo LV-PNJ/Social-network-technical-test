@@ -1,22 +1,33 @@
-import { User } from './user'
+
+
+export type PostType = 'text' | 'image' | 'quote';
+
+export interface UserSummary {
+  id: string;
+  username: string;
+  avatar?: string;
+}
 
 export interface Post {
-  id: string
-  content: string
-  imageUrl?: string | null
-  likesCount: number
-  likedBy: string[] // Array of user IDs who liked the post
-  createdAt: string
-  updatedAt: string
-  user: Partial<User> // User object for the post author
+  id: string;
+  type: PostType;
+  title?: string | null;
+  content: string;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  linkUrl?: string | null;
+  quoteSource?: string | null;
+  tags?: string[];
+  user: UserSummary; 
+  userId: string; 
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+  likesCount: number;
+  likedBy: string[]; // Array of user IDs who liked the post
 }
 
-export interface CreatePostData {
-  content: string
-  imageUrl?: string
-}
+// Para crear un post, no enviamos id, user, createdAt, etc.
+export type CreatePostData = Omit<Post, 'id' | 'user' | 'userId' | 'createdAt' | 'updatedAt' | 'likesCount' | 'likedBy'>;
 
-export interface UpdatePostData {
-  content?: string
-  imageUrl?: string | null // Allow unsetting imageUrl
-} 
+// Para actualizar un post
+export type UpdatePostData = Partial<CreatePostData> & { id: string }; 

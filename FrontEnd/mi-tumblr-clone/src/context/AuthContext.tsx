@@ -12,7 +12,7 @@ interface AuthContextType {
   checkAuthStatus: () => Promise<void>; // Function to manually re-trigger auth check
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export  const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -81,10 +81,3 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-export const UseAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('UseAuth must be used within an AuthProvider');
-  }
-  return context;
-};

@@ -1,0 +1,29 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist
+build
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE/editor settings
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Docker-related
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Misc
+*.local
+*.log

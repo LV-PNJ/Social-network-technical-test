@@ -1,48 +1,127 @@
 import { useGetPostsByUserIdQuery } from '@/features/posts/postApiSlice';
-import { useParams } from 'react-router-dom';
-import { UseAuth } from '../../context/AuthContext';
+import { UseAuth } from '@/hooks/UseAuth'; 
 import PostList from '../../features/posts/components/PostList';
+import { Box, Typography, CircularProgress, Paper, Avatar as MuiAvatar, useTheme, Divider } from '@mui/material';
 
 const ProfilePage: React.FC = () => {
   const { currentUser } = UseAuth();
+  const theme = useTheme();
 
-  const { data: userPosts, isLoading: isPostsLoading, error: postsError } = useGetPostsByUserIdQuery(currentUser?.id!);
+  const userIdToFetch = currentUser?.id;
+
+  const { data: userPosts, isLoading: isPostsLoading, error: postsError } = useGetPostsByUserIdQuery(userIdToFetch!, {
+    skip: !userIdToFetch,
+  });
 
   const handleLikePost = (postId: string) => {
     if (!currentUser) return;
-    // Implement like functionality using mutation
+    console.log('Like post on profile page:', postId);
   };
 
+  if (!currentUser && !isPostsLoading) {
+    return (
+      <Box textAlign="center" mt={10}>
+        <Typography variant="h6" color="text.secondary">
+          Usuario no autenticado o no encontrado.
+        </Typography>
+      </Box>
+    );
+  }
+  
   if (isPostsLoading) {
-    return <p className="text-center text-gray-500 mt-10">Cargando...</p>;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress color="primary" />
+      </Box>
+    );
   }
 
   if (postsError) {
-    return <p className="text-center text-gray-500 mt-10">Error al cargar datos.</p>;
+    return (
+      <Box textAlign="center" mt={10}>
+        <Typography color="error">Error al cargar las publicaciones del usuario.</Typography>
+      </Box>
+    );
   }
 
   if (!currentUser) {
-    return <p className="text-center text-gray-500 mt-10">Usuario no encontrado.</p>;
+    return (
+      <Box textAlign="center" mt={10}>
+        <Typography variant="h6" color="text.secondary">
+          Sesión expirada o usuario no disponible.
+        </Typography>
+      </Box>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white shadow-md rounded-lg p-6 mb-8 flex flex-col items-center sm:flex-row sm:items-start">
-        <img
-          src={currentUser.avatarUrl || 'https://i.pravatar.cc/150?u=default'}
+    <Box sx={{ py: 4, maxWidth: 900, mx: 'auto' }}>
+      <Paper 
+        elevation={6}
+        sx={{
+          p: { xs: 2, sm: 4 },
+          mb: 5,
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' }, 
+          alignItems: 'center',
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '12px',
+        }}
+      >
+        <MuiAvatar
+          src={currentUser.avatarUrl || currentUser.avatar || 'https://i.pravatar.cc/150?u=default'}
           alt={currentUser.username}
-          className="w-32 h-32 rounded-full mr-0 sm:mr-6 mb-4 sm:mb-0 border-4 border-blue-500"
+          sx={{
+            width: { xs: 100, sm: 120, md: 150 },
+            height: { xs: 100, sm: 120, md: 150 },
+            mr: { sm: 4, md: 5 },
+            mb: { xs: 3, sm: 0 },
+            border: `5px solid ${theme.palette.primary.dark}`,
+            boxShadow: theme.shadows[3],
+          }}
         />
-        <div className="text-center sm:text-left">
-          <h1 className="text-3xl font-bold mb-1">{currentUser.username}</h1>
-          <p className="text-gray-600 mb-1">{currentUser.email}</p>
-          {currentUser.bio && <p className="text-gray-700 mt-2">{currentUser.bio}</p>}
-        </div>
-      </div>
+        <Box textAlign={{ xs: 'center', sm: 'left' }} sx={{width: '100%'}}>
+          <Typography variant="h3" component="h1" fontWeight={800} sx={{color: theme.palette.text.primary}} gutterBottom>
+            {currentUser.username}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" gutterBottom sx={{mb: currentUser.bio ? 1.5 : 0}}>
+            {currentUser.email}
+          </Typography>
+          {currentUser.bio && (
+            <>
+              <Divider sx={{ my: 1.5, borderColor: theme.palette.divider }} />
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                {currentUser.bio}
+              </Typography>
+            </>
+          )}
+        </Box>
+      </Paper>
 
-      <h2 className="text-2xl font-semibold mb-6">Publicaciones de {currentUser.username}</h2>
-      <PostList posts={userPosts || []} onLike={handleLikePost} onAddComment={() => {}} />
-    </div>
+      <Typography 
+        variant="h4"
+        component="h2" 
+        fontWeight={700}
+        gutterBottom 
+        sx={{ 
+          color: theme.palette.text.primary, 
+          mb: 4,
+          pb: 1,
+          borderBottom: `3px solid ${theme.palette.primary.main}`,
+          display: 'inline-block',
+        }}
+      >
+        Mis Publicaciones
+      </Typography>
+      
+      {(!userPosts || userPosts.length === 0) && !isPostsLoading ? (
+        <Typography variant="subtitle1" color="text.secondary" textAlign="center">
+          Aún no has creado ninguna publicación.
+        </Typography>
+      ) : (
+        <PostList posts={userPosts || []} onLike={handleLikePost} onAddComment={() => {}} />
+      )}
+    </Box>
   );
 };
 

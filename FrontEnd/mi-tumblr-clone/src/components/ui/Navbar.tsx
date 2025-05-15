@@ -10,18 +10,27 @@ import {
   Menu,
   MenuItem,
   Box,
+  useTheme,
 } from '@mui/material'
 import {
   Add as AddIcon,
   AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material'
-import { UseAuth } from '@/context/AuthContext'
+import { UseAuth } from '@/hooks/UseAuth'; 
 
-export default function Navbar() {
-  const { user, logout } = UseAuth()
+// Import NavbarProps from MainLayout or define it here if preferred
+// For simplicity, let's assume MainLayout exports it or it's in a shared types file
+// If not, define it here:
+interface NavbarProps {
+  onOpenCreatePostModal: () => void;
+}
+
+export default function Navbar({ onOpenCreatePostModal }: NavbarProps) {
+  const { currentUser, logout } = UseAuth()
   const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const theme = useTheme()
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -39,11 +48,22 @@ export default function Navbar() {
 
   const handleProfile = () => {
     handleClose()
-    navigate(`/profile/${user?.username}`)
+    if (currentUser?.id) {
+      navigate(`/profile/${currentUser.id}`)
+    } else {
+      navigate('/')
+    }
   }
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+    <AppBar 
+      position="fixed" 
+      sx={{
+        zIndex: (theme) => theme.zIndex.drawer + 1,
+        backgroundColor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+      }}
+    >
       <Toolbar>
         <Typography
           variant="h6"
@@ -54,18 +74,19 @@ export default function Navbar() {
             color: 'inherit',
             flexGrow: 1,
             fontWeight: 'bold',
+            letterSpacing: '1px',
           }}
         >
           DevX
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Button
-            component={Link}
-            to="/create-post"
+            onClick={onOpenCreatePostModal}
             variant="contained"
-            color="secondary"
+            color="primary"
             startIcon={<AddIcon />}
+            sx={{ fontWeight: 'bold' }}
           >
             Create
           </Button>
@@ -78,10 +99,10 @@ export default function Navbar() {
             onClick={handleMenu}
             color="inherit"
           >
-            {user?.avatar ? (
-              <Avatar src={user.avatar} alt={user.username} />
+            {currentUser?.avatar ? (
+              <Avatar src={currentUser.avatar} alt={currentUser.username} sx={{ width: 32, height: 32 }} />
             ) : (
-              <AccountCircleIcon />
+              <AccountCircleIcon sx={{ fontSize: 32 }} />
             )}
           </IconButton>
 
@@ -100,8 +121,8 @@ export default function Navbar() {
             open={Boolean(anchorEl)}
             onClose={handleClose}
           >
-            <MenuItem onClick={handleProfile}>Profile</MenuItem>
-            <MenuItem onClick={handleLogout}>
+            <MenuItem onClick={handleProfile} sx={{ color: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'inherit'}}>Profile</MenuItem>
+            <MenuItem onClick={handleLogout} sx={{ color: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'inherit'}}>
               <LogoutIcon sx={{ mr: 1 }} />
               Logout
             </MenuItem>

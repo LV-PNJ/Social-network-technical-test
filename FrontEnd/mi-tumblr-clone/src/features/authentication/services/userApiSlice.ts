@@ -2,11 +2,12 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { User, UserLoginData, UserRegistrationData } from '../../../types/user';
 import { getStoredToken } from '@/utils/storage'; 
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 // Define a service using a base URL and expected endpoints
 export const userApiSlice = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:8876/api/',
+    baseUrl: API_BASE_URL,
     prepareHeaders: (headers) => { 
       const token = getStoredToken(); 
       if (token) {

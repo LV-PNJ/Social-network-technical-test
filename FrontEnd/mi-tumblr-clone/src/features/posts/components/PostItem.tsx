@@ -1,9 +1,8 @@
 // src/features/posts/components/PostItem.tsx
-import React, { useState } from 'react';
-import type { Post, Comment as CommentType } from '../../../utils';
-import { UseAuth } from '../../../context/AuthContext';
+import React from 'react';
+import type { Post } from '../../../utils';
+import { UseAuth } from '@/hooks/UseAuth'; 
 import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
 import { Link } from 'react-router-dom';
 
 interface PostItemProps {

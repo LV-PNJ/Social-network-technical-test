@@ -1,6 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { Box, CircularProgress } from '@mui/material'
-import { UseAuth } from '@/context/AuthContext'
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
+import { UseAuth } from '@/hooks/UseAuth'; 
 
 export default function PrivateRoute() {
   const { currentUser, isLoading } = UseAuth()

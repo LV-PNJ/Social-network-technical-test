@@ -12,7 +12,7 @@ import {
 } from '@mui/material'
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material'
 import { useGetPostByIdQuery, useUpdatePostMutation } from '@/features/posts/postApiSlice'
-import { UseAuth } from '@/context/AuthContext'
+import { UseAuth } from '@/hooks/UseAuth'; 
 
 export default function EditPostPage() {
   const { postId } = useParams<{ postId: string }>()
