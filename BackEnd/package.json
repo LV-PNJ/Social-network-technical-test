@@ -1,0 +1,47 @@
+{
+  "name": "devx-backend",
+  "scripts": {
+    "start": "node src/index.ts",
+    "build": "tsx watch src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "seed": "ts-node src/scripts/seeder.ts"
+  },
+  "dependencies": {
+    "argon2": "^0.43.0",
+    "bcrypt": "^5.1.1",
+    "class-validator": "^0.14.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0",
+    "reflect-metadata": "^0.1.14",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "typeorm": "^0.3.24",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.18",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "version": "1.0.0",
+  "description": "Social Network (DevX)",
+  "main": "src/index.js",
+  "keywords": [
+    "Social",
+    "network",
+    "devx",
+    "node",
+    "express",
+    "typescript"
+  ],
+  "author": "Hilder Arrieta",
+  "license": "ISC"
+}
