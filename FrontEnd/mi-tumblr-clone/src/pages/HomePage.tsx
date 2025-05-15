@@ -1,10 +1,9 @@
-
 import React from 'react';
 import CreatePostForm from '../features/posts/components/CreatePostForm';
 import { UseAuth } from '../context/AuthContext';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import PostCard from '@/components/ui/PostCard';
-import { useGetPostsQuery, useDeletePostMutation } from '@/features/posts/postApiSlice'; // RTK Query hook
+import { useGetPostsQuery, useDeletePostMutation, useCreatePostMutation } from '@/features/posts/postApiSlice'; // RTK Query hook
 import { Post } from '@/types/post'; 
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +19,11 @@ const HomePage: React.FC = () => {
     error 
   } = useGetPostsQuery();
 
+  console.log("HomePage: Posts data from API:", posts);
+  console.log("HomePage: IsLoading:", isLoading, "IsError:", isError, "Error object:", error);
+
   const [deletePost] = useDeletePostMutation();
+  const [createPost] = useCreatePostMutation();
 
   const handleEditPost = (postToEdit: Post) => {
     navigate(`/edit-post/${postToEdit.id}`);
@@ -38,46 +41,48 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // Removed manual useEffect for fetching, handleAddPost, handleLikePost, handleAddComment
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    const errorMessage = (error as any)?.data?.message || (error as any)?.error || 'Failed to load posts.';
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', flexDirection: 'column' }}>
-        <Typography color="error">Error: {errorMessage}</Typography>
-        {/* Optionally, add a refetch button if your hook supports it or use refetch from the hook
-            const { refetch } = useGetPostsQuery(); 
-            <Button onClick={() => refetch()}>Try Again</Button> 
-        */}
-      </Box>
-    );
-  }
+  const handleAddPost = async (postData: Omit<Post, 'id' | 'author' | 'likes' | 'comments' | 'createdAt' | 'userId'> & { type: Post['type'] }) => {
+    try {
+      await createPost(postData).unwrap();
+    } catch (err) {
+      console.error('Failed to add post:', err);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">Inicio</h1>
-      {currentUser && <CreatePostForm />}
+      {currentUser && <CreatePostForm onAddPost={handleAddPost} />}
       
-      {(!posts || posts.length === 0) && !isLoading ? (
+      {isLoading && (
+         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+           <CircularProgress />
+         </Box>
+      )}
+      {isError && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', flexDirection: 'column' }}>
+          <Typography color="error">Error al cargar posts: {(error as any)?.data?.message || (error as any)?.error || 'Error desconocido'}</Typography>
+        </Box>
+      )}
+      
+      {!isLoading && !isError && (!posts || posts.length === 0) && (
         <Typography variant="h6" textAlign="center" color="text.secondary" sx={{ mt: 4 }}>
-          No posts yet. Be the first to create one!
+          No hay publicaciones todavía. ¡Sé el primero en crear una!
         </Typography>
-      ) : (
-        posts?.map((post) => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
-            onEdit={handleEditPost} 
-            onDelete={handleDeletePost} 
-          />
+      )}
+
+      {!isLoading && !isError && posts && posts.length > 0 && (
+        posts.map((post) => (
+          post && post.id ? (
+            <PostCard 
+              key={post.id} 
+              post={post} 
+              onEdit={handleEditPost} 
+              onDelete={handleDeletePost} 
+            />
+          ) : (
+            <Typography key={Math.random()} color="error">Error: Post inválido o sin ID.</Typography>
+          )
         ))
       )}
     </div>

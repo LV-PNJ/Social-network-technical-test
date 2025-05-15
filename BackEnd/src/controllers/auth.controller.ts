@@ -47,7 +47,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     // El usuario ya fue validado y está disponible gracias al middleware
     const user = req.user!;
-
+    console.log('User found:', user);
     const payload = {
       id: user.id,
       role: 'user',

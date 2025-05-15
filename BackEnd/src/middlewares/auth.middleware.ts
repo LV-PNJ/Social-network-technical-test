@@ -103,10 +103,12 @@ export const validateLoginInput = async (
       );
     }
 
-    const userX = await AppDataSource.getRepository(User)
-      .createQueryBuilder("user")
-      .where("username = :user OR email = :user", { user })
-      .getOne();
+    const userX = await AppDataSource.getRepository(User).findOne({
+      where: [
+        { username: user },
+        { email: user },
+      ],
+    });
 
     console.log("User found:", userX);
     if (!userX) {
@@ -133,7 +135,7 @@ export const validateLoginInput = async (
     }
 
     // Adjuntar el usuario a la request para usarlo en el controller
-    req.user = user;
+    req.user = userX;
     next();
   } catch (error) {
     console.error("Login validation error:", error);

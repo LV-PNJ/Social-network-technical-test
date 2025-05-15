@@ -16,6 +16,8 @@ import {
   Favorite as FavoriteIcon,
   FavoriteBorder as FavoriteBorderIcon,
   MoreVert as MoreVertIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material'
 import { Post } from '@/types/post'
 import { UseAuth } from '@/context/AuthContext'
@@ -28,67 +30,25 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
-  const { user } = UseAuth()
+  const { currentUser } = UseAuth()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [localPost, setLocalPost] = useState(post)
+  const open = Boolean(anchorEl)
 
-  const [likePostMutation, { isLoading: isLiking }] = useLikePostMutation();
-  const [unlikePostMutation, { isLoading: isUnliking }] = useUnlikePostMutation();
+  const [likePost] = useLikePostMutation()
+  const [unlikePost] = useUnlikePostMutation()
 
-  useEffect(() => {
-    setLocalPost(post);
-  }, [post]);
+  const hasLiked = currentUser && post.likedBy.includes(currentUser.id)
+  const isOwner = currentUser?.id === post.user.id;
 
-  const isLiked = user && localPost.likedBy ? localPost.likedBy.includes(user.id) : false
-  const isAuthor = user && localPost.user ? localPost.user.id === user.id : false
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleMenuClose = () => {
-    setAnchorEl(null)
-  }
-
-  const handleEdit = () => {
-    handleMenuClose()
-    if (onEdit) {
-      onEdit(localPost)
-    }
-  }
-
-  const handleDelete = () => {
-    handleMenuClose()
-    if (onDelete) {
-      onDelete(localPost)
-    }
-  }
-
-  const handleLikeClick = async () => {
-    if (!user || isLiking || isUnliking) return
-
-    const originalPost = { ...localPost };
-    const newLikedBy = [...(localPost.likedBy || [])];
-    let newLikesCount = localPost.likesCount || 0;
-
-    if (isLiked) {
-      const userIndex = newLikedBy.indexOf(user.id);
-      if (userIndex > -1) newLikedBy.splice(userIndex, 1);
-      newLikesCount = Math.max(0, newLikesCount - 1);
-    } else {
-      if (!newLikedBy.includes(user.id)) newLikedBy.push(user.id);
-      newLikesCount += 1;
-    }
-    setLocalPost({ ...localPost, likedBy: newLikedBy, likesCount: newLikesCount });
-
+  const handleLike = async () => {
     try {
-      const updatedPostFromServer = isLiked
-        ? await unlikePostMutation(localPost.id).unwrap()
-        : await likePostMutation(localPost.id).unwrap();
-      setLocalPost(updatedPostFromServer);
-    } catch (error) {
-      console.error('Failed to update like:', error);
-      setLocalPost(originalPost);
+      if (hasLiked) {
+        await unlikePost(post.id).unwrap()
+      } else {
+        await likePost(post.id).unwrap()
+      }
+    } catch (err) {
+      console.error('Failed to toggle like:', err)
     }
   }
 
@@ -98,39 +58,29 @@ export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
         avatar={
           <Avatar
             component={Link}
-            to={`/profile/${localPost.user?.username || ''}`}
-            src={localPost.user?.avatar}
-            alt={localPost.user?.username}
+            to={`/profile/${post.user.id}`}
+            src={post.user?.avatar || 'https://i.pravatar.cc/150?u=default'}
+            alt={post.user.username}
           />
         }
         action={
-          isAuthor && (
-            <>
-              <IconButton aria-label="settings" onClick={handleMenuClick} disabled={isLiking || isUnliking}>
-                <MoreVertIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-              >
-                <MenuItem onClick={handleEdit}>Edit</MenuItem>
-                <MenuItem onClick={handleDelete}>Delete</MenuItem>
-              </Menu>
-            </>
+          currentUser?.id === post.user.id && (
+            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+              <MoreVertIcon />
+            </IconButton>
           )
         }
         title={
           <Link
-            to={`/profile/${localPost.user?.username || ''}`}
+            to={`/profile/${post.user.id}`}
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
-            {localPost.user?.username}
+            {post.user.username}
           </Link>
         }
-        subheader={new Date(localPost.createdAt).toLocaleDateString()}
+        subheader={new Date(post.createdAt).toLocaleString()}
       />
-      {localPost.imageUrl && (
+      {post.imageUrl && (
         <Box
           component="img"
           sx={{
@@ -139,21 +89,41 @@ export default function PostCard({ post, onEdit, onDelete }: PostCardProps) {
             maxHeight: 500,
             objectFit: 'cover',
           }}
-          src={localPost.imageUrl}
+          src={post.imageUrl}
           alt="Post content"
         />
       )}
       <CardContent>
-        <Typography variant="body1">{localPost.content}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {post.content}
+        </Typography>
       </CardContent>
       <CardActions disableSpacing>
-        <IconButton onClick={handleLikeClick} color={isLiked ? 'primary' : 'default'} disabled={isLiking || isUnliking}>
-          {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+        <IconButton onClick={handleLike} aria-label="like post">
+          {hasLiked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
         </IconButton>
-        <Typography variant="body2" color="text.secondary">
-          {localPost.likesCount}
-        </Typography>
+        <Typography>{post.likedBy.length}</Typography>
+        {onEdit && (
+          <IconButton onClick={() => onEdit(post)} aria-label="edit post" disabled={!isOwner}>
+            <EditIcon />
+          </IconButton>
+        )}
+        {onDelete && (
+          <IconButton onClick={() => onDelete(post)} aria-label="delete post" disabled={!isOwner}>
+            <DeleteIcon />
+          </IconButton>
+        )}
       </CardActions>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={() => { onEdit?.(post); setAnchorEl(null); }} disabled={!isOwner}>Edit</MenuItem>
+        <MenuItem onClick={() => { onDelete?.(post); setAnchorEl(null); }} disabled={!isOwner}>Delete</MenuItem>
+      </Menu>
     </Card>
   )
 } 

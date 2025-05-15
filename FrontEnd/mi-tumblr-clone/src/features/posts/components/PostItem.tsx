@@ -9,35 +9,23 @@ import { Link } from 'react-router-dom';
 interface PostItemProps {
   post: Post;
   onLike: (postId: string) => void;
-  onAddComment: (postId: string, commentText: string) => void;
 }
 
-const PostItem: React.FC<PostItemProps> = ({ post, onLike, onAddComment }) => {
+const PostItem: React.FC<PostItemProps> = ({ post, onLike }) => {
   const { currentUser } = UseAuth();
-  const [showComments, setShowComments] = useState(false);
-  const [newComment, setNewComment] = useState('');
-
-  const hasLiked = currentUser && post.likes.includes(currentUser.id);
-
-  const handleCommentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newComment.trim() && currentUser) {
-      onAddComment(post.id, newComment.trim());
-      setNewComment('');
-    }
-  };
+  const hasLiked = currentUser && Array.isArray(post.likes) && post.likes.includes(currentUser.id);
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-6">
       <div className="flex items-center mb-4">
         <img
-          src={post.author.avatarUrl || 'https://i.pravatar.cc/150?u=default'}
-          alt={post.author.username}
+          src={'https://i.pravatar.cc/150?u=default'}
+          alt={post.userId}
           className="w-10 h-10 rounded-full mr-3"
         />
         <div>
-          <Link to={`/profile/${post.author.id}`} className="font-semibold text-blue-600 hover:underline">
-            {post.author.username}
+          <Link to={`/profile/${post.userId}`} className="font-semibold text-blue-600 hover:underline">
+            {post.userId}
           </Link>
           <p className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
         </div>
@@ -54,7 +42,6 @@ const PostItem: React.FC<PostItemProps> = ({ post, onLike, onAddComment }) => {
         </blockquote>
       )}
       {/* Añadir más tipos de post según sea necesario */}
-
 
       {post.tags && post.tags.length > 0 && (
         <div className="mb-4">
@@ -74,46 +61,11 @@ const PostItem: React.FC<PostItemProps> = ({ post, onLike, onAddComment }) => {
             className={`text-sm ${hasLiked ? 'text-red-500' : 'text-gray-500'}`}
             variant="secondary"
           >
-            ❤️ {post.likes.length} {hasLiked ? 'Liked' : 'Like'}
-          </Button>
-          <Button
-            onClick={() => setShowComments(!showComments)}
-            className="text-sm"
-            variant="secondary"
-          >
-            💬 {post.comments.length} Comentarios
+            ❤️ {Array.isArray(post.likes) ? post.likes.length : 0} {hasLiked ? 'Liked' : 'Like'}
           </Button>
         </div>
         {/* Aquí podrían ir opciones de rebloguear, compartir, etc. */}
       </div>
-
-      {showComments && (
-        <div className="mt-4">
-          {post.comments.map((comment: CommentType) => (
-            <div key={comment.id} className="bg-gray-50 p-3 rounded-md mb-2">
-              <p>
-                <Link to={`/profile/${comment.userId}`} className="font-semibold text-blue-500 hover:underline">
-                    {comment.username}
-                </Link>
-                : {comment.text}
-              </p>
-              <p className="text-xs text-gray-400">{new Date(comment.createdAt).toLocaleString()}</p>
-            </div>
-          ))}
-          {currentUser && (
-            <form onSubmit={handleCommentSubmit} className="mt-2 flex">
-              <Input
-                type="text"
-                placeholder="Escribe un comentario..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="flex-grow mr-2"
-              />
-              <Button type="submit" variant="primary">Comentar</Button>
-            </form>
-          )}
-        </div>
-      )}
     </div>
   );
 };

@@ -26,6 +26,7 @@ export default function RegisterForm() {
     setError('');
 
     const formData = new FormData(event.currentTarget);
+    const displayName = formData.get('displayName') as string;
     const username = formData.get('username') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -36,7 +37,7 @@ export default function RegisterForm() {
       return;
     }
 
-    const registrationData: UserRegistrationData = { username, email, password };
+    const registrationData: UserRegistrationData = { displayName, username, email, password };
 
     try {
       const result = await registerUserMutation(registrationData).unwrap();
@@ -73,6 +74,17 @@ export default function RegisterForm() {
       )}
 
       <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="displayName"
+          label="What should we call you?"
+          name="displayName"
+          autoComplete="name"
+          autoFocus
+          disabled={isLoading}
+        />
         <TextField
           margin="normal"
           required

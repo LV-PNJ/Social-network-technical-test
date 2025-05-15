@@ -1,23 +1,34 @@
-
 // src/pages/NotFoundPage.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import { Box, Typography, Button, Paper } from '@mui/material';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 const NotFoundPage: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-6">
-      <h1 className="text-6xl font-bold text-blue-600 mb-4">404</h1>
-      <h2 className="text-3xl font-semibold text-gray-800 mb-2">Página No Encontrada</h2>
-      <p className="text-gray-600 mb-8">
-        Lo sentimos, la página que estás buscando no existe o ha sido movida.
-      </p>
-      <Link
-        to="/"
-        className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition duration-300"
-      >
-        Volver al Inicio
-      </Link>
-    </div>
+    <Box minHeight="100vh" display="flex" alignItems="center" justifyContent="center" bgcolor="#0f2239">
+      <Paper elevation={6} sx={{ p: 6, textAlign: 'center', maxWidth: 400 }}>
+        <ErrorOutlineIcon color="error" sx={{ fontSize: 64, mb: 2 }} />
+        <Typography variant="h1" color="primary" fontWeight={700} gutterBottom sx={{ fontSize: 64 }}>
+          404
+        </Typography>
+        <Typography variant="h4" fontWeight={600} gutterBottom>
+          Página No Encontrada
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          Lo sentimos, la página que estás buscando no existe o ha sido movida.
+        </Typography>
+        <Button
+          component={RouterLink}
+          to="/"
+          variant="contained"
+          color="primary"
+          size="large"
+        >
+          Volver al Inicio
+        </Button>
+      </Paper>
+    </Box>
   );
 };
 

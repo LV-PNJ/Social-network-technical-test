@@ -10,18 +10,12 @@ import {
 } from '@mui/material'
 import {
   Home as HomeIcon,
-  Explore as ExploreIcon,
-  Bookmark as BookmarkIcon,
-  Settings as SettingsIcon,
 } from '@mui/icons-material'
 
 const drawerWidth = 240
 
 const menuItems = [
   { text: 'Home', icon: <HomeIcon />, path: '/' },
-  { text: 'Explore', icon: <ExploreIcon />, path: '/explore' },
-  { text: 'Bookmarks', icon: <BookmarkIcon />, path: '/bookmarks' },
-  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ]
 
 export default function Sidebar() {

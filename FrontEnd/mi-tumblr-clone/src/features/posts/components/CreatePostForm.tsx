@@ -1,9 +1,7 @@
-
 // src/features/posts/components/CreatePostForm.tsx
 import React, { useState } from 'react';
 import { UseAuth } from '../../../context/AuthContext';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import { Box, Button, TextField, MenuItem, Paper, Typography } from '@mui/material';
 import type { Post } from '../../../utils'; // Asegúrate que Post incluye 'type'
 
 interface CreatePostFormProps {
@@ -35,71 +33,92 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onAddPost }) => {
   };
 
   if (!currentUser) {
-    return <p className="text-center text-gray-500">Debes iniciar sesión para crear una publicación.</p>;
+    return <Typography align="center" color="text.secondary">Debes iniciar sesión para crear una publicación.</Typography>;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6 mb-6">
-      <h2 className="text-xl font-semibold mb-4">Crear Nueva Publicación</h2>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Post</label>
-        <select
-          value={postType}
-          onChange={(e) => setPostType(e.target.value as Post['type'])}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        >
-          <option value="text">Texto</option>
-          <option value="image">Imagen (URL)</option>
-          <option value="quote">Cita</option>
-          {/* Añadir más tipos */}
-        </select>
-      </div>
+    <Box display="flex" justifyContent="center" alignItems="center" sx={{ width: '100%' }}>
+      <Paper elevation={8} sx={{
+        p: 4,
+        mb: 6,
+        maxWidth: 540,
+        width: '100%',
+        borderRadius: 4,
+        background: '#fff',
+        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+      }}>
+        <Typography variant="h4" fontWeight={900} align="center" gutterBottom sx={{ color: '#36465d', letterSpacing: 1 }}>
+          Crear publicación
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit}>
+          <TextField
+            select
+            label="Tipo de Post"
+            value={postType}
+            onChange={(e) => setPostType(e.target.value as Post['type'])}
+            fullWidth
+            margin="normal"
+            sx={{ fontWeight: 700, fontSize: 18 }}
+          >
+            <MenuItem value="text">Texto</MenuItem>
+            <MenuItem value="image">Imagen (URL)</MenuItem>
+            <MenuItem value="quote">Cita</MenuItem>
+          </TextField>
 
-      {postType === 'image' && (
-        <Input
-          label="URL de la Imagen"
-          type="url"
-          placeholder="https://example.com/image.png"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-        />
-      )}
+          {postType === 'image' ? (
+            <TextField
+              label="URL de la Imagen"
+              type="url"
+              placeholder="https://example.com/image.png"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              fullWidth
+              margin="normal"
+              sx={{ fontSize: 18 }}
+            />
+          ) : (
+            <TextField
+              label={postType === 'quote' ? 'Cita' : 'Contenido'}
+              multiline
+              rows={4}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={postType === 'quote' ? 'La cita inspiradora...' : 'Escribe algo...'}
+              required
+              fullWidth
+              margin="normal"
+              sx={{ fontSize: 18 }}
+            />
+          )}
 
-      {postType !== 'image' && (
-         <div className="mb-4">
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-            {postType === 'quote' ? 'Cita' : 'Contenido'}
-          </label>
-          <textarea
-            id="content"
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={postType === 'quote' ? 'La cita inspiradora...' : 'Escribe algo...'}
-            required
+          <TextField
+            label={postType === 'quote' ? 'Autor de la cita (Título)' : 'Título (Opcional)'}
+            type="text"
+            placeholder="Un título interesante"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            fullWidth
+            margin="normal"
+            sx={{ fontSize: 18 }}
           />
-        </div>
-      )}
-      
-      <Input
-        label={`Título (${postType === 'quote' ? 'Autor de la cita' : 'Opcional'})`}
-        type="text"
-        placeholder="Un título interesante"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
 
-      <Input
-        label="Etiquetas (separadas por comas)"
-        type="text"
-        placeholder="viajes, comida, codigo"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-      />
-      <Button type="submit" className="w-full" variant="primary">Publicar</Button>
-    </form>
+          <TextField
+            label="Etiquetas (separadas por comas)"
+            type="text"
+            placeholder="viajes, comida, codigo"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            fullWidth
+            margin="normal"
+            sx={{ fontSize: 18 }}
+          />
+          <Button type="submit" variant="contained" fullWidth sx={{ mt: 3, py: 1.5, fontWeight: 900, fontSize: 18, background: '#36465d', '&:hover': { background: '#222f3e' } }}>
+            Publicar
+          </Button>
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 

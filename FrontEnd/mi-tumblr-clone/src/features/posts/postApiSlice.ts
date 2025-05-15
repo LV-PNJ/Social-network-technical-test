@@ -93,8 +93,8 @@ export const postApiSlice = createApi({
       }),
       transformResponse: (response: any, meta, arg) => {
         // Backend returns { statusCode, ..., data: { message, postId } }
-        if (response.data && response.data.postId === arg) {
-            return { success: true, id: arg };
+        if (response.data) {
+            return { success: true };
         }
         throw new Error(response.data?.message || 'Failed to delete post');
       },
