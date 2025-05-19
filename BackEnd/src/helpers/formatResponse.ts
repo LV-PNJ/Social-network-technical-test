@@ -14,7 +14,6 @@ interface FormattedResponse {
 }
 
 export const formatResponse = (statusCode: number, data: any): FormattedResponse => {
-  // En esta versión no se aplica cifrado, solo retorna la respuesta formateada.
   try {
     // Si es un error formateado, mantener su estructura
     if (data?.data?.success === false) {
@@ -26,7 +25,6 @@ export const formatResponse = (statusCode: number, data: any): FormattedResponse
       };
     }
 
-    // Si es una respuesta exitosa, formatear con estructura similar
     return {
       statusCode,
       statusMessage: responsesTypes[statusCode]?.statusMessage || 'Unknown',

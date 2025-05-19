@@ -89,7 +89,6 @@ export const getMe = async (req: Request, res: Response) => {
       );
     }
     
-    // Devuelve solo la información necesaria del usuario, excluyendo datos sensibles como la contraseña
     return res.status(200).json(
       formatResponse(200, {
         id: user.id,

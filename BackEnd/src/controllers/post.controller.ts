@@ -13,7 +13,6 @@ const formatPostOutput = (post: Post | null, currentUser?: User) => {
     id: post.id,
     content: post.content,
     imageUrl: post.imageUrl,
-    likesCount: post.likedBy ? post.likedBy.length : 0,
     likedBy: post.likedBy || [],
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
