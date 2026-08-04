@@ -15,10 +15,11 @@ class JwtServiceTest {
     private JwtService jwtService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        TestRsaKeys keys = TestRsaKeys.generate();
         JwtProperties props = new JwtProperties();
-        props.setPrivateKeyLocation("classpath:certs/private.key");
-        props.setPublicKeyLocation("classpath:certs/public.key");
+        props.setPrivateKeyLocation(keys.privateLocation());
+        props.setPublicKeyLocation(keys.publicLocation());
         props.setExpirationMs(3_600_000);
         props.setIssuer("identity-service");
         PemKeyLoader loader = new PemKeyLoader(new DefaultResourceLoader());

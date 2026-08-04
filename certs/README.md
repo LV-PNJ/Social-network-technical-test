@@ -1,20 +1,25 @@
 # JWT RSA keys (RS256)
 
 Identity firma con `private.key` (PKCS#8).  
-Posts API verifica con `public.key` (X.509).
+Posts API verifica con `public.key` (SPKI / X.509 PEM).
 
-## Generar par local
+**These files are gitignored. Do not commit them.**
 
-```bash
-openssl genrsa -out private.key 2048
-openssl rsa -in private.key -pubout -out public.key
-# Convertir a PKCS#8 si openssl generó PKCS#1:
-openssl pkcs8 -topk8 -nocrypt -in private.key -out private.pkcs8.key
-mv private.pkcs8.key private.key
+## Generate (recommended)
+
+From repo root:
+
+```powershell
+.\scripts\generate-jwt-keys.ps1
 ```
 
-Copiar también a:
-- `BackEnd/src/config/keys/`
-- `services/identity-service/src/main/resources/certs/` (solo para demos locales)
+Or manually:
 
-No versionar las llaves reales (ver `.gitignore`).
+```bash
+openssl genrsa -out private.rsa.pem 2048
+openssl pkcs8 -topk8 -nocrypt -in private.rsa.pem -out private.key
+openssl rsa -in private.rsa.pem -pubout -out public.key
+rm private.rsa.pem
+```
+
+Docker Compose mounts `./certs` into Identity and `public.key` into Posts.

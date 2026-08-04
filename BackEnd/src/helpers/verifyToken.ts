@@ -13,10 +13,15 @@ export type IdentityTokenPayload = {
 };
 
 const loadPublicKey = (): string => {
-  if (AppConfig.jwtPublicKey) {
-    return AppConfig.jwtPublicKey;
+  const inline = process.env.JWT_PUBLIC_KEY || AppConfig.jwtPublicKey;
+  if (inline) {
+    return inline;
   }
-  return readFileSync(path.join(__dirname, '../config/keys/public.key'), 'utf8');
+  const keyPath =
+    process.env.JWT_PUBLIC_KEY_PATH ||
+    AppConfig.jwtPublicKeyPath ||
+    path.join(__dirname, '../config/keys/public.key');
+  return readFileSync(keyPath, 'utf8');
 };
 
 export const tokenVerify = (token: string): IdentityTokenPayload => {

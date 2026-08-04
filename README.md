@@ -16,11 +16,13 @@ git clone <tu-repo>
 cd Social-network-technical-test
 
 cp .env.example .env
-# Asegura llaves RSA en ./certs (ver certs/README.md) y POSTGRES_PASSWORD en .env
+# Editar POSTGRES_PASSWORD en .env — no commitear .env
+powershell -File .\scripts\generate-jwt-keys.ps1
 
 docker compose up --build
 ```
 
+Secretos: [docs/secrets.md](docs/secrets.md). Las llaves en `./certs` están gitignored.
 Espera a que Identity esté `healthy` (~30–60s la primera vez).
 
 ### Usuario demo

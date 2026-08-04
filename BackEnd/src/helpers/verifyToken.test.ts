@@ -1,16 +1,19 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'fs';
-import path from 'path';
+import { generateKeyPairSync } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { tokenVerify } from './verifyToken';
 
-const privateKey = readFileSync(
-  path.join(__dirname, '../config/keys/private.key'),
-  'utf8'
-);
-
 describe('tokenVerify (RS256)', () => {
+  let privateKey: string;
+
   beforeAll(() => {
+    const { privateKey: priv, publicKey } = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+    privateKey = priv;
+    process.env.JWT_PUBLIC_KEY = publicKey;
     process.env.JWT_ISSUER = 'identity-service';
   });
 

@@ -1,32 +1,18 @@
-# Ignorar node_modules (se instalarán en el contenedor)
 node_modules
-npm-debug.log
+npm-debug.log*
 yarn-error.log
-
-# Ignorar archivos de TypeScript ya compilados (opcional si compilas en Docker)
 dist
 build
-
-# Ignorar carpetas del editor
 .vscode
 .idea
-
-# Ignorar tests y otras carpetas que no necesitas en producción
 coverage
-__tests__
-test
-*.spec.ts
-*.test.ts
-
-# Git
+.env
+**/.env
+src/config/keys/*.key
+*.pem
+*.key
 .git
 .gitignore
-
-# Dockerfile y docker-compose opcionalmente si ya están en otro lugar
-docker-compose.yml
-Dockerfile
-
-# Otros archivos temporales
 *.log
 *.swp
 .DS_Store

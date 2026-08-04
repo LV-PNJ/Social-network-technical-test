@@ -25,25 +25,24 @@ git clone <URL-del-repositorio>
 cd Social-network-technical-test
 ```
 
-## 4. Configuración de entorno
+## 4. Configuración de entorno (sin secretos en Git)
 
 ```bash
 cp .env.example .env
+# PowerShell (Windows): generar par RSA gitignored
+.\scripts\generate-jwt-keys.ps1
 ```
 
-Editar `.env` (mínimo):
+Editar `.env` (mínimo): poner un `POSTGRES_PASSWORD` propio (no dejar `change-me` en entornos reales).
 
-```env
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=<contraseña-segura>
-POSTGRES_DB=devx
-# JWT RS256 — ver carpeta certs/ (private.key solo Identity; public.key también Posts)
-JWT_EXPIRATION_MS=3600000
-JWT_ISSUER=identity-service
-CORS_ORIGINS=*
+Opcional local (fuera de Compose):
+
+```bash
+cp BackEnd/.env.example BackEnd/.env
+cp FrontEnd/mi-tumblr-clone/.env.example FrontEnd/mi-tumblr-clone/.env
 ```
 
-**Importante:** no versionar `.env` ni secretos reales.
+**Importante:** no versionar `.env`, `*.key` ni `*.pem`. Detalle: [secrets.md](./secrets.md).
 
 ## 5. Arranque
 

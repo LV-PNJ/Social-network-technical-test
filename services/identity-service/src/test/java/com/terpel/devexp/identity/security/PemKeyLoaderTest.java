@@ -14,9 +14,10 @@ class PemKeyLoaderTest {
     private final PemKeyLoader loader = new PemKeyLoader(new DefaultResourceLoader());
 
     @Test
-    void loadsPkcs8PrivateAndX509PublicKeys() {
-        PrivateKey privateKey = loader.loadPrivateKey("classpath:certs/private.key");
-        PublicKey publicKey = loader.loadPublicKey("classpath:certs/public.key");
+    void loadsPkcs8PrivateAndX509PublicKeys() throws Exception {
+        TestRsaKeys keys = TestRsaKeys.generate();
+        PrivateKey privateKey = loader.loadPrivateKey(keys.privateLocation());
+        PublicKey publicKey = loader.loadPublicKey(keys.publicLocation());
         assertNotNull(privateKey);
         assertNotNull(publicKey);
         assertTrue(privateKey.getAlgorithm().contains("RSA"));

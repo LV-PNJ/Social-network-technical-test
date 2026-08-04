@@ -43,7 +43,7 @@ dist-ssr
 *.sw?
 FrontEnd/mi-tumblr-clone/Example/
 
-# Secrets / local env
+# Secrets / local env (see docs/secrets.md)
 .env
 **/.env
 !**/.env.example
@@ -51,6 +51,9 @@ BackEnd/src/config/keys/*.key
 certs/*.key
 certs/*.pem
 **/resources/certs/*.key
+**/test/resources/certs/*.key
 *.pem
 *.p12
+*.key
+!certs/README.md
 /BackEnd/nbproject/private/

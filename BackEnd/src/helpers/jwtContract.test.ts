@@ -1,19 +1,23 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import path from 'path';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { generateKeyPairSync } from 'crypto';
 import jwt from 'jsonwebtoken';
 
-const privateKey = readFileSync(
-  path.join(__dirname, '../config/keys/private.key'),
-  'utf8'
-);
-const publicKey = readFileSync(
-  path.join(__dirname, '../config/keys/public.key'),
-  'utf8'
-);
 const ISSUER = 'identity-service';
 
 describe('Identity JWT contract (RS256)', () => {
+  let privateKey: string;
+  let publicKey: string;
+
+  beforeAll(() => {
+    const pair = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+    privateKey = pair.privateKey;
+    publicKey = pair.publicKey;
+  });
+
   it('accepts tokens with sub + alias like Identity issues', () => {
     const token = jwt.sign(
       { alias: 'demo', role: 'user' },
