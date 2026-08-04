@@ -48,12 +48,13 @@ FrontEnd/mi-tumblr-clone/Example/
 **/.env
 !**/.env.example
 BackEnd/src/config/keys/*.key
-certs/*.key
-certs/*.pem
+BackEnd/post-api/src/config/keys/*.key
+BackEnd/certs/*.key
+BackEnd/certs/*.pem
 **/resources/certs/*.key
 **/test/resources/certs/*.key
 *.pem
 *.p12
 *.key
-!certs/README.md
+!BackEnd/certs/README.md
 /BackEnd/nbproject/private/

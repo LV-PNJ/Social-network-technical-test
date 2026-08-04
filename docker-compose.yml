@@ -33,7 +33,7 @@ services:
 
   identity:
     build:
-      context: ./services/identity-service
+      context: ./BackEnd/identity-service
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
@@ -50,7 +50,7 @@ services:
       LOG_PATH: /app/logs
       SPRING_OUTPUT_ANSI_ENABLED: ALWAYS
     volumes:
-      - ./certs:/app/certs:ro
+      - ./BackEnd/certs:/app/certs:ro
       - ./logs/identity:/app/logs
     depends_on:
       db:
@@ -60,7 +60,7 @@ services:
 
   api:
     build:
-      context: ./BackEnd
+      context: ./BackEnd/post-api
       dockerfile: Dockerfile
     ports:
       - "8876:8876"
@@ -80,7 +80,7 @@ services:
       LOG_DIR: /app/logs
       LOG_FILE: /app/logs/posts-service.log
     volumes:
-      - ./certs/public.key:/app/src/config/keys/public.key:ro
+      - ./BackEnd/certs/public.key:/app/src/config/keys/public.key:ro
       - ./logs/api:/app/logs
     depends_on:
       db:

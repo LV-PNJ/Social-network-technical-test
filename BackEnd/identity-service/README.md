@@ -55,7 +55,7 @@ Swagger: http://localhost:8081/swagger-ui.html
 3. Run with Spring Boot goal (no el exec genérico de NetBeans):
 
 ```bash
-cd services/identity-service
+cd BackEnd/identity-service
 .\mvnw.cmd spring-boot:run
 ```
 

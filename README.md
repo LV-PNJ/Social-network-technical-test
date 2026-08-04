@@ -17,12 +17,12 @@ cd Social-network-technical-test
 
 cp .env.example .env
 # Editar POSTGRES_PASSWORD en .env — no commitear .env
-powershell -File .\scripts\generate-jwt-keys.ps1
+# Generar JWT keys en BackEnd/certs (ver BackEnd/certs/README.md)
 
 docker compose up --build
 ```
 
-Secretos: [docs/secrets.md](docs/secrets.md). Las llaves en `./certs` están gitignored.
+Secretos: [docs/secrets.md](docs/secrets.md). Las llaves en `BackEnd/certs/` están gitignored.
 Espera a que Identity esté `healthy` (~30–60s la primera vez).
 
 ### Usuario demo
@@ -46,6 +46,12 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 
 ## Arquitectura (resumen)
 
+| Carpeta | Contenido |
+|---------|-----------|
+| `FrontEnd/` | UI React (Vite + MUI) |
+| `BackEnd/` | `identity-service/` + `post-api/` + `certs/` |
+| `docs/` | Manuales, diagramas, Postman, checklist |
+
 | Servicio | Stack | Puerto | Rol |
 |----------|-------|--------|-----|
 | `identity` | Java 17 / Spring Boot / JPA / Flyway | 8081 | Auth + perfiles (nombres, apellidos, nacimiento, alias) |
@@ -54,7 +60,7 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 | `client` | React / Vite / MUI | 3000 | UI |
 | `db` | PostgreSQL 15 | 5433→5432 | Persistencia |
 
-- JWT **RS256**: Identity firma con `certs/private.key`; Posts verifica con `certs/public.key`.
+- JWT **RS256**: Identity firma con `BackEnd/certs/private.key`; PostApi verifica con `BackEnd/certs/public.key`.
 - Posts **no** registra usuarios: valida el token de Identity y proyecta un usuario local para ownership/likes.
 - Diagramas (secuencia, componentes, infra, despliegue): [docs/diagramas/](docs/diagramas/)
 - Arquitectura: [docs/architecture.md](docs/architecture.md)
@@ -76,7 +82,7 @@ docker compose exec api npm test
 # Identity (Java) — rebuild con tests o JDK 17+ local
 docker compose exec identity sh -c "echo 'usar mvnw test en build stage / JDK 17'"
 # Local con wrapper:
-# cd services/identity-service && ./mvnw test
+# cd BackEnd/identity-service && ./mvnw test
 ```
 
 ## Degradación
@@ -87,7 +93,8 @@ Si Identity o Posts no responden, el frontend muestra un **banner** y mensajes c
 ## Secretos
 
 - Usa `.env` (no se versiona). Plantilla: `.env.example`
-- No commits de claves `*.key` / `*.pem` (ver `.gitignore`)
+- Llaves JWT solo en `BackEnd/certs/` (gitignored; ver [docs/secrets.md](docs/secrets.md))
+- No commits de `*.key` / `*.pem`
 
 ## Documentación de entrega
 
