@@ -63,8 +63,7 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 - JWT **RS256**: Identity firma con `BackEnd/certs/private.key`; PostApi verifica con `BackEnd/certs/public.key`.
 - Posts **no** registra usuarios: valida el token de Identity y proyecta un usuario local para ownership/likes.
 - Diagramas (secuencia, componentes, infra, despliegue): [docs/diagramas/](docs/diagramas/)
-- Arquitectura: [docs/architecture.md](docs/architecture.md)
-- Realtime: [docs/realtime-likes.md](docs/realtime-likes.md)
+- Arquitectura: [docs/diagramas/](docs/diagramas/)
 
 ## Flujo happy path
 
@@ -100,15 +99,7 @@ Si Identity o Posts no responden, el frontend muestra un **banner** y mensajes c
 
 | Documento | Ruta |
 |-----------|------|
-| Manual instalación (MD/PDF) | `docs/manual-instalacion.md`, `docs/Manual_Instalacion_DEVEXP.pdf` |
-| Manual usuario (MD/PDF) | `docs/manual-usuario.md`, `docs/Manual_Usuario_DEVEXP.pdf` |
-| Guía sustentación | `docs/guia-sustentacion.md` |
-| Checklist rúbrica | `docs/checklist-entrega.md` |
-| Postman (integración) | `docs/postman/` — Newman: 43 asserts |
-| Arquitectura | `docs/architecture.md` |
-| Diagramas | `docs/diagramas/` |
-| Logging | `docs/logging.md` |
-| Realtime | `docs/realtime-likes.md` |
+| Postman (integración) | `docs/postman/` 
 
 ## Parar
 
