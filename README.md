@@ -1,25 +1,105 @@
-# 📱 Social Network Technical Test
+# Social Network Technical Test (DEVEXP v2)
 
-Este proyecto es una prueba técnica que simula una red social, utilizando Docker Compose para facilitar su despliegue y ejecución local.
+Red social en **microservicios** (Java + Node) para la prueba técnica Full Stack DEVEXP.
 
-## 🚀 Instrucciones de ejecución
+## Requisitos previos
 
-1. **Clona el repositorio:**
+- Docker Desktop / Docker Engine + Compose v2
+- Puertos libres: **3000**, **8081**, **8876**, **5433** (o cambia el mapeo de `db` en `docker-compose.yml`)
 
-   ```bash
-   git clone https://github.com/LV-PNJ/Social-network-technical-test.git
-   cd Social-network-technical-test
-   ```
-## 🌐 Acceso a la Aplicación
+No necesitas instalar Java/Node en el host para ejecutar la demo.
 
-Una vez que los servicios estén en funcionamiento, puedes acceder a los siguientes endpoints desde tu navegador:
+## Arranque en máquina limpia
 
-- **Frontend:** [http://localhost:3000](http://localhost:3000)
-- **Backend/API:** [http://localhost:8876](http://localhost:8876)
-- **Documentación Swagger (API Docs):** [http://localhost:8876/docs/](http://localhost:8876/docs/)
+```bash
+git clone <tu-repo>
+cd Social-network-technical-test
 
-  ![Swagger UI](https://github.com/user-attachments/assets/f1b24f4e-6735-4df1-a4f7-7e03ed75ba2e)
+cp .env.example .env
+# Edita JWT_SECRET y POSTGRES_PASSWORD en .env
 
-## 🚀 Video de explicación y demostración
-[Haz clic aquí para ver el video de demostración(![image](https://github.com/user-attachments/assets/c15a1d57-83b4-4ded-a883-cce65ddaef40)
-)](https://1drv.ms/v/c/367661b49ea74967/EVXkn3nAentEq3j5tq1wUj4BpSsWcZ0LdJoE25_PA37p-g?e=jzJs2d)
+docker compose up --build
+```
+
+Espera a que Identity esté `healthy` (~30–60s la primera vez).
+
+### Usuario demo
+
+| Campo | Valor |
+|-------|-------|
+| Alias | `demo` |
+| Password | `Demo123!` |
+
+## URLs
+
+| Superficie | URL |
+|------------|-----|
+| Frontend | http://localhost:3000 |
+| Identity Swagger | http://localhost:8081/swagger-ui.html |
+| Identity health | http://localhost:8081/actuator/health |
+| Posts Swagger | http://localhost:8876/docs/ |
+| Posts health | http://localhost:8876/api/health |
+| Likes WebSocket | `ws://localhost:8876/ws` |
+
+## Arquitectura (resumen)
+
+| Servicio | Stack | Puerto | Rol |
+|----------|-------|--------|-----|
+| `identity` | Java 17 / Spring Boot / JPA / Flyway | 8081 | Auth + perfiles (nombres, apellidos, nacimiento, alias) |
+| `api` | Node / Express / TypeORM | 8876 | Publicaciones, likes REST + WebSocket |
+| `client` | React / Vite / MUI | 3000 | UI |
+| `db` | PostgreSQL 15 | 5433→5432 | Persistencia |
+
+- JWT **HS256** compartido vía `JWT_SECRET`.
+- Posts **no** registra usuarios: valida el token de Identity y proyecta un usuario local para ownership/likes.
+- Diagramas y secuencias: [docs/architecture.md](docs/architecture.md)
+- Realtime: [docs/realtime-likes.md](docs/realtime-likes.md)
+
+## Flujo happy path
+
+1. Abrir http://localhost:3000 → Login con `demo` / `Demo123!`
+2. Crear una publicación
+3. Dar like (otra pestaña verá el contador vía WebSocket)
+4. Ver perfil (nombres, apellidos, fecha, alias)
+
+## Tests
+
+```bash
+# Posts (Node) — dentro del contenedor (Node 21)
+docker compose exec api npm test
+
+# Identity (Java) — rebuild con tests o JDK 17+ local
+docker compose exec identity sh -c "echo 'usar mvnw test en build stage / JDK 17'"
+# Local con wrapper:
+# cd services/identity-service && ./mvnw test
+```
+
+## Degradación
+
+Si Identity o Posts no responden, el frontend muestra un **banner** y mensajes controlados (sin stack traces).  
+`GET /api/health` en Posts incluye `dependencies.identity` y puede responder `degraded`.
+
+## Secretos
+
+- Usa `.env` (no se versiona). Plantilla: `.env.example`
+- No commits de claves `*.key` / `*.pem` (ver `.gitignore`)
+
+## Documentación de entrega
+
+| Documento | Ruta |
+|-----------|------|
+| Manual instalación (MD/PDF) | `docs/manual-instalacion.md`, `docs/Manual_Instalacion_DEVEXP.pdf` |
+| Manual usuario (MD/PDF) | `docs/manual-usuario.md`, `docs/Manual_Usuario_DEVEXP.pdf` |
+| Guía sustentación | `docs/guia-sustentacion.md` |
+| Checklist rúbrica | `docs/checklist-entrega.md` |
+| Postman | `docs/postman/DEVEXP.postman_collection.json` |
+| Arquitectura | `docs/architecture.md` |
+| Realtime | `docs/realtime-likes.md` |
+
+## Parar
+
+```bash
+docker compose down
+# con volumen DB:
+docker compose down -v
+```

@@ -1,0 +1,182 @@
+{
+  "info": {
+    "name": "DEVEXP Social Network",
+    "description": "Identity (8081) + Posts (8876). Auth Bearer JWT HS256. Error contract Identity §5.1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "identityUrl", "value": "http://localhost:8081" },
+    { "key": "postsUrl", "value": "http://localhost:8876" },
+    { "key": "token", "value": "" },
+    { "key": "postId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Identity",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{identityUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Register (success example body)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alias\": \"candidate1\",\n  \"email\": \"candidate1@example.com\",\n  \"password\": \"Secret123!\",\n  \"firstName\": \"Ana\",\n  \"lastName\": \"Pérez\",\n  \"birthDate\": \"1998-05-20\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Register (validation error)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alias\": \"\",\n  \"email\": \"bad\",\n  \"password\": \"1\",\n  \"firstName\": \"\",\n  \"lastName\": \"\",\n  \"birthDate\": \"2099-01-01\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login demo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('token', j.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": \"demo\",\n  \"password\": \"Demo123!\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login invalid credentials",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": \"demo\",\n  \"password\": \"wrong\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Profile me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "X-Correlation-Id", "value": "postman-demo-1" }
+            ],
+            "url": "{{identityUrl}}/api/profiles/me"
+          }
+        },
+        {
+          "name": "Profile by alias",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{identityUrl}}/api/profiles/demo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "Health (with Identity dependency)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{postsUrl}}/api/health"
+          }
+        },
+        {
+          "name": "List posts paginated",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{postsUrl}}/api/posts?page=1&size=10"
+          }
+        },
+        {
+          "name": "Create post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('postId', j.data.post.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "postman-create-1" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Post desde Postman DEVEXP\"\n}"
+            },
+            "url": "{{postsUrl}}/api/posts"
+          }
+        },
+        {
+          "name": "Like post",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{postsUrl}}/api/posts/{{postId}}/like"
+          }
+        },
+        {
+          "name": "Unlike post",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{postsUrl}}/api/posts/{{postId}}/like"
+          }
+        },
+        {
+          "name": "Posts without token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{postsUrl}}/api/posts"
+          }
+        }
+      ]
+    }
+  ]
+}

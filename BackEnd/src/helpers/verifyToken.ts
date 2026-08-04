@@ -1,25 +1,35 @@
 ﻿import jwt from 'jsonwebtoken';
-import { readFileSync } from 'fs';
-import path from 'path';
 import { AppConfig } from '../config/appConfig';
 
-const publicKey = readFileSync(path.join(__dirname, '../config/keys/public.key'), 'utf8');
+export type IdentityTokenPayload = {
+  sub: string;
+  alias: string;
+  role?: string;
+  iat?: number;
+  exp?: number;
+};
 
-export const tokenVerify = (token: string): Record<string, any> => {
-    try {
-        const payload = jwt.verify(token, publicKey, {
-            algorithms: ['RS256'],
-            issuer: AppConfig.name,
-            audience: 'devx',
-        });
+export const tokenVerify = (token: string): IdentityTokenPayload => {
+  const payload = jwt.verify(token, AppConfig.jwtSecret, {
+    algorithms: ['HS256'],
+  });
 
-        if (typeof payload !== 'object' || payload === null) {
-            throw new Error('Invalid token payload');
-        }
+  if (typeof payload !== 'object' || payload === null || !payload.sub) {
+    throw new Error('Invalid token payload');
+  }
 
-        return payload as Record<string, any>;
-    } catch (error: any) {
-        // Re-lanza el error original para que el middleware lo distinga
-        throw error;
-    }
+  const alias = (payload as jwt.JwtPayload).alias;
+  if (typeof alias !== 'string' || !alias) {
+    throw new Error('Token missing alias claim');
+  }
+
+  return {
+    sub: String(payload.sub),
+    alias,
+    role: typeof (payload as jwt.JwtPayload).role === 'string'
+      ? String((payload as jwt.JwtPayload).role)
+      : 'user',
+    iat: (payload as jwt.JwtPayload).iat,
+    exp: (payload as jwt.JwtPayload).exp,
+  };
 };

@@ -1,154 +1,42 @@
-import { Request, Response, NextFunction } from "express";
-import { tokenVerify } from "../helpers/verifyToken";
-import { AppDataSource } from "../config/dbConfig";
-import { User } from "../models/User";
-import { formatResponse } from "../helpers/formatResponse";
-import { errorFormat } from "../helpers/errors";
-import { validate } from "class-validator";
-import jwt from "jsonwebtoken";
-// Extend Request type to include user
+import { Request, Response, NextFunction } from 'express';
+import { tokenVerify } from '../helpers/verifyToken';
+import { AppDataSource } from '../config/dbConfig';
+import { User } from '../models/User';
+import { formatResponse } from '../helpers/formatResponse';
+import { errorFormat } from '../helpers/errors';
+import jwt from 'jsonwebtoken';
 
-export const validateRegisterInput = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { username, email, password, displayName } = req.body;
+/**
+ * Ensures a local User row exists for posts ownership/likes.
+ * Auth source of truth is Identity; this is a projection from JWT claims.
+ */
+async function ensureLocalUserFromToken(payload: {
+  sub: string;
+  alias: string;
+}): Promise<User> {
+  const repo = AppDataSource.getRepository(User);
+  let user = await repo.findOneBy({ id: payload.sub });
 
-    if (!username || !email || !password || !displayName) {
-      return res.status(400).json(
-        formatResponse(
-          400,
-          errorFormat({
-            status: 400,
-            message: "Username, email name and password are required",
-          })
-        )
-      );
+  if (user) {
+    if (user.username !== payload.alias) {
+      user.username = payload.alias;
+      await repo.save(user);
     }
-
-    // Crear una instancia de User para validar con class-validator
-    const user = new User();
-    user.username = username;
-    user.email = email;
-    user.password = password;
-
-    const errors = await validate(user);
-    if (errors.length > 0) {
-      const formErrors = errors.map((error) => ({
-        field: error.property,
-        message: Object.values(error.constraints!)[0],
-      }));
-      return res.status(400).json(
-        formatResponse(
-          400,
-          errorFormat({
-            status: 400,
-            message: "Validation failed",
-            formErrors,
-          })
-        )
-      );
-    }
-
-    // Verificar si username o email ya existen
-    const existingUser = await AppDataSource.getRepository(User).findOneBy([
-      { username },
-      { email },
-    ]);
-    if (existingUser) {
-      return res.status(409).json(
-        formatResponse(
-          409,
-          errorFormat({
-            status: 409,
-            message: "Username or email already registered",
-          })
-        )
-      );
-    }
-
-    next();
-  } catch (error) {
-    console.error("Register validation error:", error);
-    return res
-      .status(500)
-      .json(
-        formatResponse(
-          500,
-          errorFormat({ status: 500, message: "Internal server error" })
-        )
-      );
+    return user;
   }
-};
 
-export const validateLoginInput = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { user, password } = req.body;
+  user = repo.create({
+    id: payload.sub,
+    username: payload.alias,
+    email: `${payload.alias.toLowerCase()}@identity.local`,
+    password: await User.hashPassword(`identity-stub-${payload.sub}`),
+    displayName: payload.alias,
+    following: [],
+    followers: [],
+  });
 
-    if ((!user) || !password) {
-      return res.status(400).json(
-        formatResponse(
-          400,
-          errorFormat({
-            status: 400,
-            message: "Username or email and password are required",
-          })
-        )
-      );
-    }
-
-    const userX = await AppDataSource.getRepository(User).findOne({
-      where: [
-        { username: user },
-        { email: user },
-      ],
-    });
-
-    console.log("User found:", userX);
-    if (!userX) {
-      return res
-        .status(401)
-        .json(
-          formatResponse(
-            401,
-            errorFormat({ status: 401, message: "Invalid credentials" })
-          )
-        );
-    }
-
-    const valid = await userX.verifyPassword(password);
-    if (!valid) {
-      return res
-        .status(401)
-        .json(
-          formatResponse(
-            401,
-            errorFormat({ status: 401, message: "Invalid credentials" })
-          )
-        );
-    }
-
-    // Adjuntar el usuario a la request para usarlo en el controller
-    req.user = userX;
-    next();
-  } catch (error) {
-    console.error("Login validation error:", error);
-    return res
-      .status(500)
-      .json(
-        formatResponse(
-          500,
-          errorFormat({ status: 500, message: "Internal server error" })
-        )
-      );
-  }
-};
+  return repo.save(user);
+}
 
 export const verifyToken = async (
   req: Request,
@@ -163,40 +51,25 @@ export const verifyToken = async (
         .json(
           formatResponse(
             401,
-            errorFormat({ status: 401, message: "No token provided" })
+            errorFormat({ status: 401, message: 'No token provided' })
           )
         );
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = authHeader.split(' ')[1];
     if (!token) {
       return res
         .status(401)
         .json(
           formatResponse(
             401,
-            errorFormat({ status: 401, message: "Invalid token format" })
+            errorFormat({ status: 401, message: 'Invalid token format' })
           )
         );
     }
 
     const decoded = tokenVerify(token);
-
-    const user = await AppDataSource.getRepository(User).findOneBy({
-      id: decoded.id,
-    });
-    if (!user) {
-      return res
-        .status(401)
-        .json(
-          formatResponse(
-            401,
-            errorFormat({ status: 401, message: "User not found" })
-          )
-        );
-    }
-
-    // Adjuntar el usuario a la request para usarlo en otros middlewares/controllers
+    const user = await ensureLocalUserFromToken(decoded);
     req.user = user;
     next();
   } catch (error) {
@@ -206,7 +79,7 @@ export const verifyToken = async (
         .json(
           formatResponse(
             401,
-            errorFormat({ status: 401, message: "Token expired" })
+            errorFormat({ status: 401, message: 'Token expired' })
           )
         );
     }
@@ -217,14 +90,57 @@ export const verifyToken = async (
         .json(
           formatResponse(
             401,
-            errorFormat({ status: 401, message: "Invalid token" })
+            errorFormat({ status: 401, message: 'Invalid token' })
           )
         );
     }
 
-    console.error("Unexpected token verification error:", error);
+    console.error('Unexpected token verification error:', error);
     return res
       .status(500)
-      .json({ status: 500, message: "Internal server error" });
+      .json(
+        formatResponse(
+          500,
+          errorFormat({ status: 500, message: 'Internal server error' })
+        )
+      );
   }
+};
+
+/** @deprecated Auth moved to Identity service — kept for backward compatibility during migration */
+export const validateRegisterInput = async (
+  req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  return res.status(410).json(
+    formatResponse(
+      410,
+      errorFormat({
+        status: 410,
+        message:
+          'Register moved to Identity service (POST http://localhost:8081/api/auth/register)',
+        internalCode: 'AUTH_MOVED',
+      })
+    )
+  );
+};
+
+/** @deprecated Auth moved to Identity service */
+export const validateLoginInput = async (
+  req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  return res.status(410).json(
+    formatResponse(
+      410,
+      errorFormat({
+        status: 410,
+        message:
+          'Login moved to Identity service (POST http://localhost:8081/api/auth/login)',
+        internalCode: 'AUTH_MOVED',
+      })
+    )
+  );
 };

@@ -13,6 +13,7 @@ import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useLoginUserMutation } from '@/features/authentication/services/userApiSlice';
 import { setStoredToken, setStoredUser } from '@/utils/storage';
 import { UseAuth } from '@/hooks/UseAuth'; 
+import { mapAuthError } from '@/utils/errorMessages';
 import { UserLoginData } from '@/types/user';
 
 export default function LoginForm() {
@@ -44,14 +45,9 @@ export default function LoginForm() {
       } else {
         setError(result.statusDescription || 'Login failed. Unexpected response structure.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login failed:', err);
-      setError(
-        err.data?.statusDescription ||
-        err.data?.error ||
-        err.message ||
-        'An unknown error occurred during login.'
-      );
+      setError(mapAuthError(err));
     }
   };
 

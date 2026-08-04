@@ -8,6 +8,7 @@ import ProfilePage from './pages/auth/ProfilePage';
 import EditPostPage from './pages/EditPostPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PrivateRoute from './router/PrivateRoute';
+import ServiceStatusBanner from './components/ui/ServiceStatusBanner';
 
 // Tumblr-like theme
 const tumblrTheme = createTheme({
@@ -87,8 +88,9 @@ const tumblrTheme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={tumblrTheme}>
-      <CssBaseline /> {/* Ensures background color applies correctly and provides base styling */} 
-      <Box sx={{ height: '100%', bgcolor: 'background.default' }}> {/* Ensure Box also respects theme background */}
+      <CssBaseline />
+      <Box sx={{ height: '100%', bgcolor: 'background.default' }}>
+        <ServiceStatusBanner />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />

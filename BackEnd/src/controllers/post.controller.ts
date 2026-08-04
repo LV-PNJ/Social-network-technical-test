@@ -4,8 +4,11 @@ import { Post } from '../models/Post';
 import { User } from '../models/User';
 import { formatResponse } from '../helpers/formatResponse';
 import { errorFormat } from '../helpers/errors';
+import { parsePagination } from '../helpers/pagination';
+import { broadcastLikeUpdate } from '../realtime/likeHub';
+import { getCorrelationId } from '../middlewares/correlation.middleware';
+import { logger } from '../helpers/logger';
 
-// Helper to format post output consistently
 const formatPostOutput = (post: Post | null, currentUser?: User) => {
   if (!post) return null;
   const postUser = post.user || currentUser;
@@ -54,19 +57,28 @@ export const createPost = async (req: Request, res: Response) => {
   }
 };
 
-// Read (List all)
-export const listPosts = async (_: Request, res: Response) => {
+// Read (List all) — supports ?page=&size=
+export const listPosts = async (req: Request, res: Response) => {
   try {
-    const posts = await AppDataSource.getRepository(Post).find({ 
+    const { page, size, skip } = parsePagination(req);
+    const [posts, total] = await AppDataSource.getRepository(Post).findAndCount({
       relations: ['user'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
+      skip,
+      take: size,
     });
 
     return res.status(200).json(
       formatResponse(200, {
         message: 'Posts retrieved successfully',
         internalCode: 'LIST',
-        posts: posts.map(post => formatPostOutput(post))
+        posts: posts.map((post) => formatPostOutput(post)),
+        pagination: {
+          page,
+          size,
+          total,
+          totalPages: Math.ceil(total / size) || 1,
+        },
       })
     );
   } catch (error) {
@@ -105,27 +117,30 @@ export const getPost = async (req: Request, res: Response) => {
   }
 };
 
-// Read (List posts by user)
+// Read (List posts by user) — supports ?page=&size=
 export const listPostsByUser = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const posts = await AppDataSource.getRepository(Post).find({
+    const { page, size, skip } = parsePagination(req);
+    const [posts, total] = await AppDataSource.getRepository(Post).findAndCount({
       where: { user: { id: userId } },
       relations: ['user'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
+      skip,
+      take: size,
     });
-
-    if (!posts) {
-      return res.status(404).json(
-        formatResponse(404, errorFormat({ status: 404, message: 'No posts found for this user' }))
-      );
-    }
 
     return res.status(200).json(
       formatResponse(200, {
         message: 'Posts by user retrieved successfully',
         internalCode: 'LIST_BY_USER',
-        posts: posts.map(post => formatPostOutput(post))
+        posts: posts.map((post) => formatPostOutput(post)),
+        pagination: {
+          page,
+          size,
+          total,
+          totalPages: Math.ceil(total / size) || 1,
+        },
       })
     );
   } catch (error) {
@@ -184,59 +199,101 @@ export const deletePost = async (req: Request, res: Response) => {
   }
 };
 
-// Like post
+// Like post — idempotent; broadcasts only when state changes
 export const likePost = async (req: Request, res: Response) => {
   try {
     const postToLike = req.post!;
     const user = req.user! as User;
+    const correlationId = getCorrelationId(req);
 
     if (!postToLike.likedBy) postToLike.likedBy = [];
-    if (!postToLike.likedBy.includes(user.id)) {
+    const alreadyLiked = postToLike.likedBy.includes(user.id);
+    if (!alreadyLiked) {
       postToLike.likedBy.push(user.id);
-    } 
+      await AppDataSource.getRepository(Post).save(postToLike);
+    }
 
-    await AppDataSource.getRepository(Post).save(postToLike);
-    const reloadedPost = await AppDataSource.getRepository(Post).findOne({ where: { id: postToLike.id }, relations: ['user'] });
+    const reloadedPost = await AppDataSource.getRepository(Post).findOne({
+      where: { id: postToLike.id },
+      relations: ['user'],
+    });
+    const likedBy = reloadedPost?.likedBy || postToLike.likedBy;
+
+    if (!alreadyLiked) {
+      broadcastLikeUpdate({
+        postId: postToLike.id,
+        likedBy,
+        likeCount: likedBy.length,
+        actorUserId: user.id,
+        action: 'like',
+        correlationId,
+      });
+    } else {
+      logger.info('like.idempotent_noop', { postId: postToLike.id, userId: user.id, correlationId });
+    }
 
     return res.status(200).json(
       formatResponse(200, {
         message: 'Post liked successfully',
         internalCode: 'LIKE',
-        post: formatPostOutput(reloadedPost)
+        post: formatPostOutput(reloadedPost),
       })
     );
   } catch (error) {
-    console.error('Like post error:', error);
+    logger.error('like.failed', { error: String(error) });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
   }
 };
 
-// Unlike post
+// Unlike post — idempotent; broadcasts only when state changes
 export const unlikePost = async (req: Request, res: Response) => {
   try {
     const postToUnlike = req.post!;
     const user = req.user! as User;
+    const correlationId = getCorrelationId(req);
 
     if (!postToUnlike.likedBy) postToUnlike.likedBy = [];
     const userIndex = postToUnlike.likedBy.indexOf(user.id);
-    if (userIndex > -1) {
+    const changed = userIndex > -1;
+    if (changed) {
       postToUnlike.likedBy.splice(userIndex, 1);
-    } 
+      await AppDataSource.getRepository(Post).save(postToUnlike);
+    }
 
-    await AppDataSource.getRepository(Post).save(postToUnlike);
-    const reloadedPost = await AppDataSource.getRepository(Post).findOne({ where: { id: postToUnlike.id }, relations: ['user'] });
+    const reloadedPost = await AppDataSource.getRepository(Post).findOne({
+      where: { id: postToUnlike.id },
+      relations: ['user'],
+    });
+    const likedBy = reloadedPost?.likedBy || postToUnlike.likedBy;
+
+    if (changed) {
+      broadcastLikeUpdate({
+        postId: postToUnlike.id,
+        likedBy,
+        likeCount: likedBy.length,
+        actorUserId: user.id,
+        action: 'unlike',
+        correlationId,
+      });
+    } else {
+      logger.info('unlike.idempotent_noop', {
+        postId: postToUnlike.id,
+        userId: user.id,
+        correlationId,
+      });
+    }
 
     return res.status(200).json(
       formatResponse(200, {
         message: 'Post unliked successfully',
         internalCode: 'UNLIKE',
-        post: formatPostOutput(reloadedPost)
+        post: formatPostOutput(reloadedPost),
       })
     );
   } catch (error) {
-    console.error('Unlike post error:', error);
+    logger.error('unlike.failed', { error: String(error) });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );

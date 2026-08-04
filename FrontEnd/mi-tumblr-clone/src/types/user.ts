@@ -1,9 +1,14 @@
 export interface User {
   id?: string | null;
   username?: string | null;
+  alias?: string | null;
   email?: string | null;
   displayName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  birthDate?: string | null;
   avatar?: string | null;
+  avatarUrl?: string | null;
   bio?: string | null;
   following?: string[] | null;
   followers?: string[] | null;
@@ -11,15 +16,16 @@ export interface User {
   updatedAt?: string | null;
 }
 
-
 export interface UserLoginData {
-  user: string
-  password: string
+  user: string;
+  password: string;
 }
 
 export interface UserRegistrationData {
-  username: string
-  email: string
-  password: string
-  displayName?: string
-} 
+  alias: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+}

@@ -82,11 +82,24 @@ const ProfilePage: React.FC = () => {
         />
         <Box textAlign={{ xs: 'center', sm: 'left' }} sx={{width: '100%'}}>
           <Typography variant="h3" component="h1" fontWeight={800} sx={{color: theme.palette.text.primary}} gutterBottom>
-            {currentUser.username}
+            {currentUser.displayName || currentUser.alias || currentUser.username}
           </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom sx={{mb: currentUser.bio ? 1.5 : 0}}>
+          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+            @{currentUser.alias || currentUser.username}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" gutterBottom>
             {currentUser.email}
           </Typography>
+          {(currentUser.firstName || currentUser.lastName) && (
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {currentUser.firstName} {currentUser.lastName}
+            </Typography>
+          )}
+          {currentUser.birthDate && (
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Nacimiento: {currentUser.birthDate}
+            </Typography>
+          )}
           {currentUser.bio && (
             <>
               <Divider sx={{ my: 1.5, borderColor: theme.palette.divider }} />

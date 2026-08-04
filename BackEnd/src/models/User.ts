@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   BeforeInsert,
   BeforeUpdate,
@@ -12,11 +12,11 @@ import {
 import argon2 from 'argon2';
 import { Post } from './Post';
 import { IsEmail, Length, Matches, IsUrl, IsOptional, IsArray, IsString } from 'class-validator';
+import { randomUUID } from 'crypto';
 
 @Entity()
-
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryColumn('uuid')
   id!: string;
 
   @Column({ 
@@ -92,7 +92,10 @@ export class User extends BaseEntity {
   @BeforeInsert()
   @BeforeUpdate()
   private async hashPassword() {
-    if (this.isPasswordDirty || !this.id) { // Hash if password changed or new user
+    if (!this.id) {
+      this.id = randomUUID();
+    }
+    if (this.isPasswordDirty || this.password && !this.password.startsWith('$argon2')) {
       this.password = await User.hashPassword(this.password);
       this.isPasswordDirty = false;
     }

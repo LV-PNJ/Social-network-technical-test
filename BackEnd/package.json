@@ -4,7 +4,9 @@
     "start": "node src/index.ts",
     "build": "tsx watch src/index.ts",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "seed": "ts-node src/scripts/seeder.ts"
+    "seed": "ts-node src/scripts/seeder.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "argon2": "^0.43.0",
@@ -20,6 +22,7 @@
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.24",
     "uuid": "^11.1.0",
+    "ws": "^8.18.1",
     "zod": "^3.24.4"
   },
   "devDependencies": {
@@ -28,10 +31,12 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.15.18",
     "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.9"
   },
   "version": "1.0.0",
   "description": "Social Network (DevX)",

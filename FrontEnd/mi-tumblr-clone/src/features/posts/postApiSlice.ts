@@ -18,17 +18,19 @@ export const postApiSlice = createApi({
   }),
   tagTypes: ['Post', 'UserPosts'],
   endpoints: (builder) => ({
-    getPosts: builder.query<Post[], void>({
-      query: () => 'posts',
+    getPosts: builder.query<Post[], { page?: number; size?: number } | void>({
+      query: (params) => {
+        const page = params?.page ?? 1;
+        const size = params?.size ?? 20;
+        return `posts?page=${page}&size=${size}`;
+      },
       transformResponse: (response: any) => {
-        // Assuming backend returns { statusCode, ..., data: { posts: [] } }
         if (response.data && response.data.posts) {
           return response.data.posts;
         }
-        return []; // Or throw error if structure is unexpected
+        return [];
       },
-      // transformErrorResponse can be simplified if backend consistently provides error in response.data.data
-      providesTags: (result) => 
+      providesTags: (result) =>
         result
           ? [...result.map(({ id }) => ({ type: 'Post' as const, id })), { type: 'Post', id: 'LIST' }]
           : [{ type: 'Post', id: 'LIST' }],

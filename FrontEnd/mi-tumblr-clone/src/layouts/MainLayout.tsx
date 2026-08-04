@@ -9,6 +9,7 @@ import CreatePostForm from '@/features/posts/components/CreatePostForm';
 import { CreatePostData, PostType } from '@/types/post';
 import CloseIcon from '@mui/icons-material/Close';
 import { useCreatePostMutation } from '@/features/posts/postApiSlice';
+import { useLikeRealtime } from '@/hooks/useLikeRealtime';
 
 // Prop type for Navbar to accept the function to open modal
 export interface NavbarProps {
@@ -26,6 +27,7 @@ const MainLayout: React.FC = () => {
   const { currentUser } = UseAuth();
   const navigate = useNavigate();
   const theme = useTheme();
+  useLikeRealtime(Boolean(currentUser));
 
   const [isCreatePostModalOpen, setCreatePostModalOpen] = useState(false);
   const [createPost, { isLoading: isCreatingPost }] = useCreatePostMutation();

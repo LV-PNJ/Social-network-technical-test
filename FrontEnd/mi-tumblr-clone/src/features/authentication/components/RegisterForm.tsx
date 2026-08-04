@@ -12,7 +12,8 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useRegisterUserMutation } from '@/features/authentication/services/userApiSlice';
 import { UserRegistrationData } from '@/types/user';
 import { setStoredToken, setStoredUser } from '@/utils/storage';
-import { UseAuth } from '@/hooks/UseAuth'; 
+import { mapAuthError } from '@/utils/errorMessages';
+import { UseAuth } from '@/hooks/UseAuth';
 
 export default function RegisterForm() {
   const navigate = useNavigate();
@@ -25,9 +26,11 @@ export default function RegisterForm() {
     setError('');
 
     const formData = new FormData(event.currentTarget);
-    const displayName = formData.get('displayName') as string;
-    const username = formData.get('username') as string;
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
+    const alias = formData.get('alias') as string;
     const email = formData.get('email') as string;
+    const birthDate = formData.get('birthDate') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
 
@@ -36,7 +39,14 @@ export default function RegisterForm() {
       return;
     }
 
-    const registrationData: UserRegistrationData = { displayName, username, email, password };
+    const registrationData: UserRegistrationData = {
+      alias,
+      email,
+      password,
+      firstName,
+      lastName,
+      birthDate,
+    };
 
     try {
       const result = await registerUserMutation(registrationData).unwrap();
@@ -47,16 +57,11 @@ export default function RegisterForm() {
         if (checkAuthStatus) await checkAuthStatus();
         navigate('/');
       } else {
-        setError(result.statusDescription || 'Registration failed. Unexpected response.');
+        setError(result.statusDescription || 'Registration failed.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Registration failed:', err);
-      setError(
-        err.data?.statusDescription ||
-        err.data?.error ||
-        err.message ||
-        'An unknown error occurred during registration.'
-      );
+      setError(mapAuthError(err));
     }
   };
 
@@ -77,10 +82,9 @@ export default function RegisterForm() {
           margin="normal"
           required
           fullWidth
-          id="displayName"
-          label="What should we call you?"
-          name="displayName"
-          autoComplete="name"
+          id="firstName"
+          label="Nombres"
+          name="firstName"
           autoFocus
           disabled={isLoading}
         />
@@ -88,10 +92,19 @@ export default function RegisterForm() {
           margin="normal"
           required
           fullWidth
-          id="username"
-          label="Username"
-          name="username"
-          autoComplete="username"
+          id="lastName"
+          label="Apellidos"
+          name="lastName"
+          disabled={isLoading}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="alias"
+          label="Alias"
+          name="alias"
+          helperText="Solo letras, números y guion bajo"
           disabled={isLoading}
         />
         <TextField
@@ -99,9 +112,20 @@ export default function RegisterForm() {
           required
           fullWidth
           id="email"
-          label="Email Address"
+          label="Email"
           name="email"
-          autoComplete="email"
+          type="email"
+          disabled={isLoading}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="birthDate"
+          label="Fecha de nacimiento"
+          name="birthDate"
+          type="date"
+          InputLabelProps={{ shrink: true }}
           disabled={isLoading}
         />
         <TextField
@@ -123,7 +147,6 @@ export default function RegisterForm() {
           label="Confirm Password"
           type="password"
           id="confirmPassword"
-          autoComplete="new-password"
           disabled={isLoading}
         />
         <Button
@@ -137,7 +160,7 @@ export default function RegisterForm() {
         </Button>
         <Box sx={{ textAlign: 'center' }}>
           <Link component={RouterLink} to="/login" variant="body2">
-            {'Already have an account? Log in'}
+            Already have an account? Log in
           </Link>
         </Box>
       </Box>
