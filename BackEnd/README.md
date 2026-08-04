@@ -2,8 +2,8 @@
 
 | Carpeta | Servicio | Puerto | Stack |
 |---------|----------|--------|-------|
-| [`identity-service/`](identity-service/) | **Identity** | 8081 | Java 17 / Spring Boot |
-| [`post-api/`](post-api/) | **PostApi** | 8876 | Node / Express / TypeORM |
-| [`certs/`](certs/) | JWT RSA (compartido) | — | `private.key` Identity · `public.key` Identity + PostApi |
+| [`identity-service/`](identity-service/) | **Identity** | 8081 | Java 17 / Spring Boot — auth + perfiles |
+| [`post-api/`](post-api/) | **PostApi** | 8876 | Node / Express — posts, likes, MQTT |
+| [`certs/`](certs/) | JWT RSA | — | `private.key` Identity · `public.key` Identity + PostApi |
 
-El Front no vive aquí → `FrontEnd/`.
+PostApi **no** registra ni hace login; solo verifica JWT de Identity.

@@ -3,6 +3,7 @@ import {
   createPost, 
   listPosts, 
   getPost,
+  listPostsByUser,
   updatePost,
   deletePost,
   likePost,
@@ -19,6 +20,28 @@ const router = Router();
  *   name: Posts
  *   description: Post management endpoints
  */
+
+/**
+ * @openapi
+ * /posts/by-user/{userId}:
+ *   get:
+ *     tags:
+ *       - Posts
+ *     summary: List posts by user
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Posts retrieved
+ */
+router.get('/by-user/:userId', verifyToken, listPostsByUser);
 
 /**
  * @openapi

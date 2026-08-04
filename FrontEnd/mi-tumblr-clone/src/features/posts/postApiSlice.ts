@@ -36,7 +36,7 @@ export const postApiSlice = createApi({
           : [{ type: 'Post', id: 'LIST' }],
     }),
     getPostsByUserId: builder.query<Post[], string>({
-      query: (userId) => `users/${userId}/posts`, // Backend endpoint /api/users/:userId/posts is now implemented.
+      query: (userId) => `posts/by-user/${userId}`,
       transformResponse: (response: any) => response.data?.posts || [],
       providesTags: (result, error, userId) => 
         result
