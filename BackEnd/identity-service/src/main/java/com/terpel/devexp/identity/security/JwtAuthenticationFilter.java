@@ -13,9 +13,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
 
@@ -41,7 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 auth.setDetails(claims.get("alias", String.class));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (Exception ignored) {
+            } catch (Exception ex) {
+                log.warn("identity.jwt.reject reason={}", ex.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

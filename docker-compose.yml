@@ -72,6 +72,7 @@ services:
       DB_PASS: ${POSTGRES_PASSWORD:-postgres}
       DB_NAME: ${POSTGRES_DB:-devexp}
       JWT_ISSUER: ${JWT_ISSUER:-identity-service}
+      JWT_PUBLIC_KEY_PATH: /app/certs/public.key
       IDENTITY_URL: http://identity:8081
       MQTT_URL: ${MQTT_URL:-mqtt://mqtt:1883}
       MQTT_LIKES_TOPIC: ${MQTT_LIKES_TOPIC:-devexp/posts/likes}
@@ -80,7 +81,7 @@ services:
       LOG_DIR: /app/logs
       LOG_FILE: /app/logs/posts-service.log
     volumes:
-      - ./BackEnd/certs/public.key:/app/src/config/keys/public.key:ro
+      - ./BackEnd/certs:/app/certs:ro
       - ./logs/api:/app/logs
     depends_on:
       db:
@@ -100,7 +101,6 @@ services:
     environment:
       VITE_API_URL: http://localhost:8876/api
       VITE_IDENTITY_URL: http://localhost:8081/api
-      VITE_WS_URL: ws://localhost:8876/ws
       VITE_MQTT_WS_URL: ws://localhost:9001
       VITE_MQTT_LIKES_TOPIC: ${MQTT_LIKES_TOPIC:-devexp/posts/likes}
     depends_on:

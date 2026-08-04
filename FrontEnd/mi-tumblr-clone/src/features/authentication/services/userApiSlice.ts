@@ -75,7 +75,7 @@ export const userApiSlice = createApi({
           statusDescription: 'Login failed.',
           error: (response?.data as any)?.message || 'Unknown error',
         },
-      invalidatesTags: [{ type: 'User', id: 'ME' }],
+      // No invalidar ME aquí: el refetch correría antes de guardar el JWT en localStorage.
     }),
     registerUser: builder.mutation<
       {

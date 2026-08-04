@@ -58,7 +58,7 @@ function applyLikeEvent(
 }
 
 /**
- * Subscribes to like updates via MQTT over WebSockets (browser).
+ * Subscribes to like updates via MQTT (broker WebSocket port :9001).
  * Broker reconnect + QoS 1; client dedupes by eventId.
  */
 export function useLikeRealtime(enabled = true) {

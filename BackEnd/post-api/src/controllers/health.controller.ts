@@ -48,7 +48,6 @@ export const checkHealth = async (_: Request, res: Response) => {
         },
       },
       realtime: {
-        websocketPath: '/ws',
         mqttUrl: process.env.MQTT_URL || 'mqtt://localhost:1883',
         mqttLikesTopic: getMqttLikesTopic(),
         mqttQos: 1,

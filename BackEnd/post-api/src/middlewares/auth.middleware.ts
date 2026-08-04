@@ -96,6 +96,19 @@ export const verifyToken = async (
     }
 
     console.error('Unexpected token verification error:', error);
+    const err = error as NodeJS.ErrnoException;
+    if (err?.code === 'ENOENT') {
+      return res.status(503).json(
+        formatResponse(
+          503,
+          errorFormat({
+            status: 503,
+            message: 'JWT public key not available on Posts API',
+            internalCode: 'JWT_KEY_MISSING',
+          })
+        )
+      );
+    }
     return res
       .status(500)
       .json(

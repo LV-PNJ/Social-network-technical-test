@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useLoginUserMutation } from '@/features/authentication/services/userApiSlice';
-import { setStoredToken, setStoredUser } from '@/utils/storage';
+import { setStoredUser } from '@/utils/storage';
 import { UseAuth } from '@/hooks/UseAuth'; 
 import { mapAuthError } from '@/utils/errorMessages';
 import { UserLoginData } from '@/types/user';
@@ -38,12 +38,11 @@ export default function LoginForm() {
     try {
       const result = await loginUserMutation(loginData).unwrap();
       if (result.status && result.data?.token) {
-        // Sesión basada en JWT: se guarda el Bearer y /profiles/me lo valida
-        setStoredToken(result.data.token);
+        // Guardar JWT y recién entonces pedir /profiles/me (con Bearer)
         if (result.data.user) {
           setStoredUser(result.data.user);
         }
-        if (checkAuthStatus) await checkAuthStatus();
+        await checkAuthStatus(result.data.token);
         navigate(from, { replace: true });
       } else {
         setError(result.statusDescription || 'Login failed. Unexpected response structure.');

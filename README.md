@@ -42,7 +42,6 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 | Posts Swagger | http://localhost:8876/docs/ |
 | Posts health | http://localhost:8876/api/health |
 | Likes MQTT (browser) | `ws://localhost:9001` topic `devexp/posts/likes` |
-| Likes WebSocket (sec.) | `ws://localhost:8876/ws` |
 
 ## Arquitectura (resumen)
 
