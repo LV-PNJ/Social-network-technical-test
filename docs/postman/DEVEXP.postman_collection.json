@@ -1,21 +1,39 @@
 {
   "info": {
-    "name": "DEVEXP Social Network",
-    "description": "Identity (8081) + Posts (8876). Auth Bearer JWT RS256. Register no emite token; Login sí. Error contract Identity §5.1.",
+    "name": "DEVEXP Social Network — Integration",
+    "description": "Pruebas de integración Identity (8081) + Posts (8876).\n\n**Orden recomendado (Collection Runner):**\n1. Health\n2. Identity (errores + login demo)\n3. Posts (con token)\n4. Flujo E2E (register → login → post → like)\n\nJWT RS256. Register **no** emite token. Contrato error Identity §5.1.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "identityUrl", "value": "http://localhost:8081" },
     { "key": "postsUrl", "value": "http://localhost:8876" },
     { "key": "token", "value": "" },
-    { "key": "postId", "value": "" }
+    { "key": "postId", "value": "" },
+    { "key": "regAlias", "value": "" },
+    { "key": "regEmail", "value": "" },
+    { "key": "regPassword", "value": "Secret123!" },
+    { "key": "demoUser", "value": "demo" },
+    { "key": "demoPassword", "value": "Demo123!" }
   ],
   "item": [
     {
-      "name": "Identity",
+      "name": "00 - Health",
       "item": [
         {
-          "name": "Health",
+          "name": "Identity health UP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Identity health status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Identity status UP', () => pm.expect(j.status).to.eql('UP'));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -23,22 +41,70 @@
           }
         },
         {
-          "name": "Register (success example body)",
+          "name": "Posts health + MQTT metadata",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Posts health 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const d = j.data || j;",
+                  "pm.test('Posts healthy o degraded', () => {",
+                  "  pm.expect(['healthy', 'degraded']).to.include(d.status);",
+                  "});",
+                  "pm.test('DB connected', () => pm.expect(d.database.status).to.eql('connected'));",
+                  "pm.test('Realtime MQTT topic presente', () => {",
+                  "  pm.expect(d.realtime).to.be.an('object');",
+                  "  pm.expect(d.realtime.mqttLikesTopic).to.be.a('string');",
+                  "  pm.expect(d.realtime.mqttQos).to.eql(1);",
+                  "});",
+                  "pm.test('Identity dependency reportada', () => {",
+                  "  pm.expect(d.dependencies.identity.status).to.be.oneOf(['up', 'down']);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"alias\": \"candidate1\",\n  \"email\": \"candidate1@example.com\",\n  \"password\": \"Secret123!\",\n  \"firstName\": \"Ana\",\n  \"lastName\": \"Pérez\",\n  \"birthDate\": \"1998-05-20\"\n}"
-            },
-            "url": "{{identityUrl}}/api/auth/register"
+            "method": "GET",
+            "header": [],
+            "url": "{{postsUrl}}/api/health"
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "01 - Identity Integration",
+      "item": [
         {
-          "name": "Register (validation error)",
+          "name": "Register validation error (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const j = pm.response.json();",
+                  "pm.test('Contrato ApiError VALIDATION_ERROR', () => {",
+                  "  pm.expect(j.status).to.eql(400);",
+                  "  pm.expect(j.code).to.eql('VALIDATION_ERROR');",
+                  "  pm.expect(j.message).to.be.a('string');",
+                  "  pm.expect(j.correlationId).to.be.a('string').and.not.empty;",
+                  "  pm.expect(j.details).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Correlation-Id", "value": "it-validation-1" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"alias\": \"\",\n  \"email\": \"bad\",\n  \"password\": \"1\",\n  \"firstName\": \"\",\n  \"lastName\": \"\",\n  \"birthDate\": \"2099-01-01\"\n}"
@@ -47,16 +113,20 @@
           }
         },
         {
-          "name": "Login demo",
+          "name": "Login invalid credentials (401)",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const j = pm.response.json();",
-                  "  pm.collectionVariables.set('token', j.token);",
-                  "}"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "const j = pm.response.json();",
+                  "pm.test('Código INVALID_CREDENTIALS', () => {",
+                  "  pm.expect(j.code).to.eql('INVALID_CREDENTIALS');",
+                  "  pm.expect(j.correlationId).to.be.a('string');",
+                  "});",
+                  "pm.test('No emite token', () => pm.expect(j.token).to.be.undefined);"
                 ]
               }
             }
@@ -66,36 +136,113 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"user\": \"demo\",\n  \"password\": \"Demo123!\"\n}"
+              "raw": "{\n  \"user\": \"{{demoUser}}\",\n  \"password\": \"wrong-password\"\n}"
             },
             "url": "{{identityUrl}}/api/auth/login"
           }
         },
         {
-          "name": "Login invalid credentials",
+          "name": "Login demo → guarda JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Emite JWT Bearer', () => {",
+                  "  pm.expect(j.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(j.tokenType).to.eql('Bearer');",
+                  "  pm.expect(j.alias).to.eql(pm.collectionVariables.get('demoUser'));",
+                  "  pm.expect(j.userId).to.be.a('string');",
+                  "  pm.expect(j.expiresInMs).to.be.a('number');",
+                  "});",
+                  "pm.test('Header JWT es RS256', () => {",
+                  "  const header = JSON.parse(",
+                  "    Buffer.from(j.token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()",
+                  "  );",
+                  "  pm.expect(header.alg).to.eql('RS256');",
+                  "});",
+                  "pm.collectionVariables.set('token', j.token);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"user\": \"demo\",\n  \"password\": \"wrong\"\n}"
+              "raw": "{\n  \"user\": \"{{demoUser}}\",\n  \"password\": \"{{demoPassword}}\"\n}"
             },
             "url": "{{identityUrl}}/api/auth/login"
           }
         },
         {
-          "name": "Profile me",
+          "name": "Profile me (Bearer JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile me 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Perfil completo', () => {",
+                  "  pm.expect(j.alias).to.eql('demo');",
+                  "  pm.expect(j.email).to.be.a('string');",
+                  "  pm.expect(j.firstName).to.be.a('string');",
+                  "  pm.expect(j.lastName).to.be.a('string');",
+                  "  pm.expect(j.birthDate).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-Correlation-Id", "value": "postman-demo-1" }
+              { "key": "X-Correlation-Id", "value": "it-profile-me" }
             ],
             "url": "{{identityUrl}}/api/profiles/me"
           }
         },
         {
-          "name": "Profile by alias",
+          "name": "Profile me without token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sin token → 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{identityUrl}}/api/profiles/me"
+          }
+        },
+        {
+          "name": "Profile by alias demo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profile by alias 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Alias demo', () => pm.expect(j.alias).to.eql('demo'));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
@@ -105,18 +252,46 @@
       ]
     },
     {
-      "name": "Posts",
+      "name": "02 - Posts Integration",
       "item": [
         {
-          "name": "Health (with Identity dependency)",
+          "name": "List posts without token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Posts sin JWT → 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{postsUrl}}/api/health"
+            "url": "{{postsUrl}}/api/posts?page=1&size=5"
           }
         },
         {
           "name": "List posts paginated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('List posts 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Estructura lista + pagination', () => {",
+                  "  pm.expect(j.data.success).to.eql(true);",
+                  "  pm.expect(j.data.posts).to.be.an('array');",
+                  "  pm.expect(j.data.pagination).to.include.keys('page', 'size', 'total', 'totalPages');",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
@@ -129,11 +304,16 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const j = pm.response.json();",
-                  "  pm.collectionVariables.set('postId', j.data.post.id);",
-                  "}"
+                  "pm.test('Create post 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Post con id y content', () => {",
+                  "  pm.expect(j.data.post.id).to.be.a('string');",
+                  "  pm.expect(j.data.post.content).to.include('Postman');",
+                  "  pm.expect(j.data.post.likedBy).to.be.an('array');",
+                  "});",
+                  "pm.collectionVariables.set('postId', j.data.post.id);"
                 ]
               }
             }
@@ -143,17 +323,60 @@
             "header": [
               { "key": "Authorization", "value": "Bearer {{token}}" },
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-Correlation-Id", "value": "postman-create-1" }
+              { "key": "X-Correlation-Id", "value": "it-create-post" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"Post desde Postman DEVEXP\"\n}"
+              "raw": "{\n  \"content\": \"Post desde Postman integración DEVEXP\"\n}"
             },
             "url": "{{postsUrl}}/api/posts"
           }
         },
         {
           "name": "Like post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Like 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Usuario quedó en likedBy', () => {",
+                  "  pm.expect(j.data.post.likedBy).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "X-Correlation-Id", "value": "it-like-1" }
+            ],
+            "url": "{{postsUrl}}/api/posts/{{postId}}/like"
+          }
+        },
+        {
+          "name": "Like post idempotent (mismo user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Like repetido sigue 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('likedBy sin duplicar userId', () => {",
+                  "  const liked = j.data.post.likedBy;",
+                  "  const unique = [...new Set(liked)];",
+                  "  pm.expect(liked.length).to.eql(unique.length);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
@@ -162,18 +385,206 @@
         },
         {
           "name": "Unlike post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Unlike 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('likedBy es array', () => pm.expect(j.data.post.likedBy).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{postsUrl}}/api/posts/{{postId}}/like"
           }
+        }
+      ]
+    },
+    {
+      "name": "03 - Flujo E2E Register→Login→Posts",
+      "description": "Integración de punta a punta: alta de usuario (sin JWT), login, publicar y like.",
+      "item": [
+        {
+          "name": "E2E 1 — Register usuario único (sin token)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const alias = 'it_' + Date.now();",
+                  "pm.collectionVariables.set('regAlias', alias);",
+                  "pm.collectionVariables.set('regEmail', alias + '@devexp.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Respuesta sin JWT', () => {",
+                  "  pm.expect(j.token).to.be.undefined;",
+                  "  pm.expect(j.alias).to.eql(pm.collectionVariables.get('regAlias'));",
+                  "  pm.expect(j.userId).to.be.a('string');",
+                  "  pm.expect(j.message).to.match(/usuario creado/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alias\": \"{{regAlias}}\",\n  \"email\": \"{{regEmail}}\",\n  \"password\": \"{{regPassword}}\",\n  \"firstName\": \"Integra\",\n  \"lastName\": \"Test\",\n  \"birthDate\": \"1999-03-15\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/register"
+          }
         },
         {
-          "name": "Posts without token (401)",
+          "name": "E2E 2 — Login usuario nuevo → JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login nuevo usuario 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('JWT emitido post-login', () => {",
+                  "  pm.expect(j.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(j.alias).to.eql(pm.collectionVariables.get('regAlias'));",
+                  "});",
+                  "pm.collectionVariables.set('token', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": \"{{regAlias}}\",\n  \"password\": \"{{regPassword}}\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "E2E 3 — Profile me con JWT nuevo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Me 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Alias del usuario registrado', () => {",
+                  "  pm.expect(j.alias).to.eql(pm.collectionVariables.get('regAlias'));",
+                  "  pm.expect(j.email).to.eql(pm.collectionVariables.get('regEmail'));",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{identityUrl}}/api/profiles/me"
+          }
+        },
+        {
+          "name": "E2E 4 — Create post con JWT nuevo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Post del usuario E2E', () => {",
+                  "  pm.expect(j.data.post.id).to.be.a('string');",
+                  "  pm.expect(j.data.post.user.username).to.eql(pm.collectionVariables.get('regAlias'));",
+                  "});",
+                  "pm.collectionVariables.set('postId', j.data.post.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"E2E post {{regAlias}}\"\n}"
+            },
             "url": "{{postsUrl}}/api/posts"
+          }
+        },
+        {
+          "name": "E2E 5 — Like del post E2E",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Like E2E 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Al menos un like', () => {",
+                  "  pm.expect(j.data.post.likedBy.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{postsUrl}}/api/posts/{{postId}}/like"
+          }
+        },
+        {
+          "name": "E2E 6 — Register duplicado alias (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Conflict 409', () => pm.response.to.have.status(409));",
+                  "const j = pm.response.json();",
+                  "pm.test('ALIAS_EXISTS', () => {",
+                  "  pm.expect(j.code).to.eql('ALIAS_EXISTS');",
+                  "  pm.expect(j.correlationId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alias\": \"{{regAlias}}\",\n  \"email\": \"otro_{{regAlias}}@devexp.test\",\n  \"password\": \"{{regPassword}}\",\n  \"firstName\": \"Dup\",\n  \"lastName\": \"Alias\",\n  \"birthDate\": \"1999-03-15\"\n}"
+            },
+            "url": "{{identityUrl}}/api/auth/register"
           }
         }
       ]
