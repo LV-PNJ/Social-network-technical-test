@@ -8,6 +8,7 @@ import { parsePagination } from '../helpers/pagination';
 import { broadcastLikeUpdate } from '../realtime/likeHub';
 import { getCorrelationId } from '../middlewares/correlation.middleware';
 import { logger } from '../helpers/logger';
+import { applyLike, applyUnlike } from '../helpers/likeState';
 
 const formatPostOutput = (post: Post | null, currentUser?: User) => {
   if (!post) return null;
@@ -228,11 +229,9 @@ export const likePost = async (req: Request, res: Response) => {
     const postToLike = req.post!;
     const user = req.user! as User;
     const correlationId = getCorrelationId(req);
-
-    if (!postToLike.likedBy) postToLike.likedBy = [];
-    const alreadyLiked = postToLike.likedBy.includes(user.id);
-    if (!alreadyLiked) {
-      postToLike.likedBy.push(user.id);
+    const { likedBy: nextLikedBy, changed } = applyLike(postToLike.likedBy, user.id);
+    postToLike.likedBy = nextLikedBy;
+    if (changed) {
       await AppDataSource.getRepository(Post).save(postToLike);
     }
 
@@ -242,7 +241,7 @@ export const likePost = async (req: Request, res: Response) => {
     });
     const likedBy = reloadedPost?.likedBy || postToLike.likedBy;
 
-    if (!alreadyLiked) {
+    if (changed) {
       broadcastLikeUpdate({
         postId: postToLike.id,
         likedBy,
@@ -277,12 +276,9 @@ export const unlikePost = async (req: Request, res: Response) => {
     const postToUnlike = req.post!;
     const user = req.user! as User;
     const correlationId = getCorrelationId(req);
-
-    if (!postToUnlike.likedBy) postToUnlike.likedBy = [];
-    const userIndex = postToUnlike.likedBy.indexOf(user.id);
-    const changed = userIndex > -1;
+    const { likedBy: nextLikedBy, changed } = applyUnlike(postToUnlike.likedBy, user.id);
+    postToUnlike.likedBy = nextLikedBy;
     if (changed) {
-      postToUnlike.likedBy.splice(userIndex, 1);
       await AppDataSource.getRepository(Post).save(postToUnlike);
     }
 

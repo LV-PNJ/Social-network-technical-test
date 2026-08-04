@@ -50,6 +50,4 @@ logging:
   level:
     root: INFO
     com.terpel.devexp.identity: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [correlationId=%X{correlationId}] %logger{36} : %m%n"
-    level: "%5p [correlationId=%X{correlationId}]"
+  # Colores + archivo: logback-spring.xml (LOG_PATH, SPRING_OUTPUT_ANSI_ENABLED)

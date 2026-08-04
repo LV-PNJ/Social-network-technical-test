@@ -5,6 +5,7 @@ import { AppDataSource } from './config/dbConfig';
 import routes from './routes';
 import { setupSwagger } from './swagger';
 import { attachLikeWebSocket } from './realtime/likeHub';
+import { connectMqttPublisher, getMqttLikesTopic } from './realtime/mqttPublisher';
 import { correlationIdMiddleware } from './middlewares/correlation.middleware';
 import { requestLoggingMiddleware } from './middlewares/requestLogging.middleware';
 import { logger } from './helpers/logger';
@@ -22,11 +23,14 @@ const server = http.createServer(app);
 AppDataSource.initialize()
   .then(() => {
     setupSwagger(app);
+    connectMqttPublisher();
     attachLikeWebSocket(server);
     server.listen(PORT, () => {
       logger.info('posts.api.started', {
         port: PORT,
         wsPath: '/ws',
+        mqttTopic: getMqttLikesTopic(),
+        mqttUrl: process.env.MQTT_URL || 'mqtt://localhost:1883',
       });
     });
   })

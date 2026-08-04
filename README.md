@@ -5,7 +5,7 @@ Red social en **microservicios** (Java + Node) para la prueba técnica Full Stac
 ## Requisitos previos
 
 - Docker Desktop / Docker Engine + Compose v2
-- Puertos libres: **3000**, **8081**, **8876**, **5433** (o cambia el mapeo de `db` en `docker-compose.yml`)
+- Puertos libres: **3000**, **8081**, **8876**, **5433**, **1883/9001** (MQTT)
 
 No necesitas instalar Java/Node en el host para ejecutar la demo.
 
@@ -39,27 +39,30 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 | Identity health | http://localhost:8081/actuator/health |
 | Posts Swagger | http://localhost:8876/docs/ |
 | Posts health | http://localhost:8876/api/health |
-| Likes WebSocket | `ws://localhost:8876/ws` |
+| Likes MQTT (browser) | `ws://localhost:9001` topic `devexp/posts/likes` |
+| Likes WebSocket (sec.) | `ws://localhost:8876/ws` |
 
 ## Arquitectura (resumen)
 
 | Servicio | Stack | Puerto | Rol |
 |----------|-------|--------|-----|
 | `identity` | Java 17 / Spring Boot / JPA / Flyway | 8081 | Auth + perfiles (nombres, apellidos, nacimiento, alias) |
-| `api` | Node / Express / TypeORM | 8876 | Publicaciones, likes REST + WebSocket |
+| `api` | Node / Express / TypeORM | 8876 | Publicaciones, likes REST + MQTT publish |
+| `mqtt` | Eclipse Mosquitto | 1883 / 9001 | Broker likes (TCP + WS) |
 | `client` | React / Vite / MUI | 3000 | UI |
 | `db` | PostgreSQL 15 | 5433→5432 | Persistencia |
 
 - JWT **RS256**: Identity firma con `certs/private.key`; Posts verifica con `certs/public.key`.
 - Posts **no** registra usuarios: valida el token de Identity y proyecta un usuario local para ownership/likes.
-- Diagramas y secuencias: [docs/architecture.md](docs/architecture.md)
+- Diagramas (secuencia, componentes, infra, despliegue): [docs/diagramas/](docs/diagramas/)
+- Arquitectura: [docs/architecture.md](docs/architecture.md)
 - Realtime: [docs/realtime-likes.md](docs/realtime-likes.md)
 
 ## Flujo happy path
 
 1. Abrir http://localhost:3000 → Login con `demo` / `Demo123!`
 2. Crear una publicación
-3. Dar like (otra pestaña verá el contador vía WebSocket)
+3. Dar like (otra pestaña verá el contador vía MQTT)
 4. Ver perfil (nombres, apellidos, fecha, alias)
 
 ## Tests
@@ -92,8 +95,10 @@ Si Identity o Posts no responden, el frontend muestra un **banner** y mensajes c
 | Manual usuario (MD/PDF) | `docs/manual-usuario.md`, `docs/Manual_Usuario_DEVEXP.pdf` |
 | Guía sustentación | `docs/guia-sustentacion.md` |
 | Checklist rúbrica | `docs/checklist-entrega.md` |
-| Postman | `docs/postman/DEVEXP.postman_collection.json` |
+| Postman (integración) | `docs/postman/` — Newman: 43 asserts |
 | Arquitectura | `docs/architecture.md` |
+| Diagramas | `docs/diagramas/` |
+| Logging | `docs/logging.md` |
 | Realtime | `docs/realtime-likes.md` |
 
 ## Parar

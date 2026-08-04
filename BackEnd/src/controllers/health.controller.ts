@@ -3,6 +3,7 @@ import { formatResponse } from '../helpers/formatResponse';
 import { AppDataSource } from '../config/dbConfig';
 import { AppConfig } from '../config/appConfig';
 import pkg from '../../package.json';
+import { getMqttLikesTopic } from '../realtime/mqttPublisher';
 import { logger } from '../helpers/logger';
 
 async function probeIdentity(timeoutMs = 2000): Promise<'up' | 'down'> {
@@ -48,6 +49,9 @@ export const checkHealth = async (_: Request, res: Response) => {
       },
       realtime: {
         websocketPath: '/ws',
+        mqttUrl: process.env.MQTT_URL || 'mqtt://localhost:1883',
+        mqttLikesTopic: getMqttLikesTopic(),
+        mqttQos: 1,
       },
       memory: {
         used: process.memoryUsage().heapUsed,

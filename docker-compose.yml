@@ -20,6 +20,17 @@ services:
     networks:
       - app-network
 
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - app-network
+
   identity:
     build:
       context: ./services/identity-service
@@ -36,8 +47,11 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
       JWT_ISSUER: ${JWT_ISSUER:-identity-service}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      LOG_PATH: /app/logs
+      SPRING_OUTPUT_ANSI_ENABLED: ALWAYS
     volumes:
       - ./certs:/app/certs:ro
+      - ./logs/identity:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -59,16 +73,24 @@ services:
       DB_NAME: ${POSTGRES_DB:-devexp}
       JWT_ISSUER: ${JWT_ISSUER:-identity-service}
       IDENTITY_URL: http://identity:8081
+      MQTT_URL: ${MQTT_URL:-mqtt://mqtt:1883}
+      MQTT_LIKES_TOPIC: ${MQTT_LIKES_TOPIC:-devexp/posts/likes}
+      LOG_COLORS: "true"
+      LOG_TO_FILE: "true"
+      LOG_DIR: /app/logs
+      LOG_FILE: /app/logs/posts-service.log
     volumes:
       - ./certs/public.key:/app/src/config/keys/public.key:ro
+      - ./logs/api:/app/logs
     depends_on:
       db:
         condition: service_healthy
       identity:
         condition: service_healthy
+      mqtt:
+        condition: service_started
     networks:
       - app-network
-
   client:
     build:
       context: ./FrontEnd/mi-tumblr-clone
@@ -79,9 +101,12 @@ services:
       VITE_API_URL: http://localhost:8876/api
       VITE_IDENTITY_URL: http://localhost:8081/api
       VITE_WS_URL: ws://localhost:8876/ws
+      VITE_MQTT_WS_URL: ws://localhost:9001
+      VITE_MQTT_LIKES_TOPIC: ${MQTT_LIKES_TOPIC:-devexp/posts/likes}
     depends_on:
       - api
       - identity
+      - mqtt
     networks:
       - app-network
 
