@@ -16,7 +16,7 @@ git clone <tu-repo>
 cd Social-network-technical-test
 
 cp .env.example .env
-# Edita JWT_SECRET y POSTGRES_PASSWORD en .env
+# Asegura llaves RSA en ./certs (ver certs/README.md) y POSTGRES_PASSWORD en .env
 
 docker compose up --build
 ```
@@ -50,7 +50,7 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 | `client` | React / Vite / MUI | 3000 | UI |
 | `db` | PostgreSQL 15 | 5433→5432 | Persistencia |
 
-- JWT **HS256** compartido vía `JWT_SECRET`.
+- JWT **RS256**: Identity firma con `certs/private.key`; Posts verifica con `certs/public.key`.
 - Posts **no** registra usuarios: valida el token de Identity y proyecta un usuario local para ownership/likes.
 - Diagramas y secuencias: [docs/architecture.md](docs/architecture.md)
 - Realtime: [docs/realtime-likes.md](docs/realtime-likes.md)

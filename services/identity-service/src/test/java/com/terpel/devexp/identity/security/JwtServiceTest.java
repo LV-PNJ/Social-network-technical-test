@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.SignatureException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.DefaultResourceLoader;
 
 class JwtServiceTest {
 
@@ -16,18 +17,22 @@ class JwtServiceTest {
     @BeforeEach
     void setUp() {
         JwtProperties props = new JwtProperties();
-        props.setSecret("devexp-change-me-use-at-least-32-chars!!");
+        props.setPrivateKeyLocation("classpath:certs/private.key");
+        props.setPublicKeyLocation("classpath:certs/public.key");
         props.setExpirationMs(3_600_000);
-        jwtService = new JwtService(props);
+        props.setIssuer("identity-service");
+        PemKeyLoader loader = new PemKeyLoader(new DefaultResourceLoader());
+        jwtService = new JwtService(props, loader);
     }
 
     @Test
-    void issuesAndParsesTokenWithAlias() {
+    void issuesAndParsesTokenWithAliasUsingRs256() {
         UUID id = UUID.fromString("f6e12a67-e209-447d-8ddd-1f764dcfc026");
         String token = jwtService.issueToken(id, "demo");
         var claims = jwtService.parse(token);
         assertEquals(id.toString(), claims.getSubject());
         assertEquals("demo", claims.get("alias", String.class));
+        assertEquals("identity-service", claims.getIssuer());
     }
 
     @Test

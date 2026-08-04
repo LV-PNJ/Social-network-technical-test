@@ -6,12 +6,14 @@ import routes from './routes';
 import { setupSwagger } from './swagger';
 import { attachLikeWebSocket } from './realtime/likeHub';
 import { correlationIdMiddleware } from './middlewares/correlation.middleware';
+import { requestLoggingMiddleware } from './middlewares/requestLogging.middleware';
 import { logger } from './helpers/logger';
 
 const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(correlationIdMiddleware);
+app.use(requestLoggingMiddleware);
 app.use('/api', routes);
 
 const PORT = Number(process.env.PORT) || 8876;

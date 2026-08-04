@@ -4,6 +4,7 @@ import com.terpel.devexp.identity.service.IdentityService;
 import com.terpel.devexp.identity.web.dto.AuthResponse;
 import com.terpel.devexp.identity.web.dto.LoginRequest;
 import com.terpel.devexp.identity.web.dto.RegisterRequest;
+import com.terpel.devexp.identity.web.dto.RegisterResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,13 +28,13 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Registrar usuario y emitir JWT")
-    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
+    @Operation(summary = "Registrar usuario (sin JWT; luego debe hacer login)")
+    public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
         return identityService.register(request);
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login con alias o email")
+    @Operation(summary = "Login con alias o email — emite JWT RS256")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return identityService.login(request);
     }

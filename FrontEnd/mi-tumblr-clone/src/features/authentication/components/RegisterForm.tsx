@@ -7,18 +7,22 @@ import {
   Link,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useRegisterUserMutation } from '@/features/authentication/services/userApiSlice';
 import { UserRegistrationData } from '@/types/user';
-import { setStoredToken, setStoredUser } from '@/utils/storage';
 import { mapAuthError } from '@/utils/errorMessages';
-import { UseAuth } from '@/hooks/UseAuth';
 
 export default function RegisterForm() {
   const navigate = useNavigate();
-  const { checkAuthStatus } = UseAuth();
   const [error, setError] = useState('');
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [createdAlias, setCreatedAlias] = useState('');
   const [registerUserMutation, { isLoading }] = useRegisterUserMutation();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -51,11 +55,10 @@ export default function RegisterForm() {
     try {
       const result = await registerUserMutation(registrationData).unwrap();
 
-      if (result.status && result.data?.token && result.data?.user) {
-        setStoredToken(result.data.token);
-        setStoredUser(result.data.user);
-        if (checkAuthStatus) await checkAuthStatus();
-        navigate('/');
+      if (result.status) {
+        // No JWT / no sesión: el usuario debe iniciar sesión explícitamente
+        setCreatedAlias(result.data?.alias || alias);
+        setSuccessOpen(true);
       } else {
         setError(result.statusDescription || 'Registration failed.');
       }
@@ -63,6 +66,11 @@ export default function RegisterForm() {
       console.error('Registration failed:', err);
       setError(mapAuthError(err));
     }
+  };
+
+  const handleSuccessOk = () => {
+    setSuccessOpen(false);
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -164,6 +172,22 @@ export default function RegisterForm() {
           </Link>
         </Box>
       </Box>
+
+      <Dialog open={successOpen} onClose={handleSuccessOk}>
+        <DialogTitle>Usuario creado</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {createdAlias
+              ? `La cuenta "${createdAlias}" se creó correctamente. Inicia sesión para continuar.`
+              : 'La cuenta se creó correctamente. Inicia sesión para continuar.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSuccessOk} variant="contained" autoFocus>
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

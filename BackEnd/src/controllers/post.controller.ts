@@ -29,6 +29,7 @@ const formatPostOutput = (post: Post | null, currentUser?: User) => {
 
 // Create
 export const createPost = async (req: Request, res: Response) => {
+  const correlationId = getCorrelationId(req);
   try {
     const { content, imageUrl } = req.body;
     const user = req.user! as User;
@@ -42,6 +43,12 @@ export const createPost = async (req: Request, res: Response) => {
     const savedPost = await AppDataSource.getRepository(Post).save(post);
     const reloadedPost = await AppDataSource.getRepository(Post).findOne({where: {id: savedPost.id}, relations: ['user']});
 
+    logger.info('posts.create.ok', {
+      postId: savedPost.id,
+      userId: user.id,
+      correlationId,
+    });
+
     return res.status(201).json(
       formatResponse(201, {
         message: 'Post created successfully',
@@ -50,7 +57,7 @@ export const createPost = async (req: Request, res: Response) => {
       })
     );
   } catch (error) {
-    console.error('Create post error:', error);
+    logger.error('posts.create.failed', { error: String(error), correlationId });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
@@ -59,6 +66,7 @@ export const createPost = async (req: Request, res: Response) => {
 
 // Read (List all) — supports ?page=&size=
 export const listPosts = async (req: Request, res: Response) => {
+  const correlationId = getCorrelationId(req);
   try {
     const { page, size, skip } = parsePagination(req);
     const [posts, total] = await AppDataSource.getRepository(Post).findAndCount({
@@ -67,6 +75,8 @@ export const listPosts = async (req: Request, res: Response) => {
       skip,
       take: size,
     });
+
+    logger.info('posts.list.ok', { page, size, total, correlationId });
 
     return res.status(200).json(
       formatResponse(200, {
@@ -82,7 +92,7 @@ export const listPosts = async (req: Request, res: Response) => {
       })
     );
   } catch (error) {
-    console.error('List posts error:', error);
+    logger.error('posts.list.failed', { error: String(error), correlationId });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
@@ -91,6 +101,7 @@ export const listPosts = async (req: Request, res: Response) => {
 
 // Read (Get one)
 export const getPost = async (req: Request, res: Response) => {
+  const correlationId = getCorrelationId(req);
   try {
     const postFromMiddleware = req.post!;
     const post = await AppDataSource.getRepository(Post).findOne({
@@ -99,8 +110,11 @@ export const getPost = async (req: Request, res: Response) => {
     });
 
     if (!post) {
+        logger.warn('posts.get.not_found', { postId: postFromMiddleware.id, correlationId });
         return res.status(404).json(formatResponse(404, errorFormat({status: 404, message: 'Post not found'})));
     }
+
+    logger.info('posts.get.ok', { postId: post.id, correlationId });
 
     return res.status(200).json(
       formatResponse(200, {
@@ -110,7 +124,7 @@ export const getPost = async (req: Request, res: Response) => {
       })
     );
   } catch (error) {
-    console.error('Get post error:', error);
+    logger.error('posts.get.failed', { error: String(error), correlationId });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
@@ -119,6 +133,7 @@ export const getPost = async (req: Request, res: Response) => {
 
 // Read (List posts by user) — supports ?page=&size=
 export const listPostsByUser = async (req: Request, res: Response) => {
+  const correlationId = getCorrelationId(req);
   try {
     const { userId } = req.params;
     const { page, size, skip } = parsePagination(req);
@@ -129,6 +144,8 @@ export const listPostsByUser = async (req: Request, res: Response) => {
       skip,
       take: size,
     });
+
+    logger.info('posts.list_by_user.ok', { userId, page, size, total, correlationId });
 
     return res.status(200).json(
       formatResponse(200, {
@@ -144,7 +161,7 @@ export const listPostsByUser = async (req: Request, res: Response) => {
       })
     );
   } catch (error) {
-    console.error('List posts by user error:', error);
+    logger.error('posts.list_by_user.failed', { error: String(error), correlationId });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
@@ -153,6 +170,7 @@ export const listPostsByUser = async (req: Request, res: Response) => {
 
 // Update
 export const updatePost = async (req: Request, res: Response) => {
+  const correlationId = getCorrelationId(req);
   try {
     const { content, imageUrl } = req.body;
     const postToUpdate = req.post!;
@@ -163,6 +181,8 @@ export const updatePost = async (req: Request, res: Response) => {
     await AppDataSource.getRepository(Post).save(postToUpdate);
     const reloadedPost = await AppDataSource.getRepository(Post).findOne({ where: { id: postToUpdate.id }, relations: ['user'] });
 
+    logger.info('posts.update.ok', { postId: postToUpdate.id, correlationId });
+
     return res.status(200).json(
       formatResponse(200, {
         message: 'Post updated successfully',
@@ -171,7 +191,7 @@ export const updatePost = async (req: Request, res: Response) => {
       })
     );
   } catch (error) {
-    console.error('Update post error:', error);
+    logger.error('posts.update.failed', { error: String(error), correlationId });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
@@ -180,9 +200,12 @@ export const updatePost = async (req: Request, res: Response) => {
 
 // Delete
 export const deletePost = async (req: Request, res: Response) => {
+  const correlationId = getCorrelationId(req);
   try {
     const post = req.post!;
     await AppDataSource.getRepository(Post).remove(post);
+
+    logger.info('posts.delete.ok', { postId: post.id, correlationId });
 
     return res.status(200).json(
       formatResponse(200, {
@@ -192,7 +215,7 @@ export const deletePost = async (req: Request, res: Response) => {
       })
     );
   } catch (error) {
-    console.error('Delete post error:', error);
+    logger.error('posts.delete.failed', { error: String(error), correlationId });
     return res.status(500).json(
       formatResponse(500, errorFormat({ status: 500, message: 'Internal server error' }))
     );
@@ -228,6 +251,7 @@ export const likePost = async (req: Request, res: Response) => {
         action: 'like',
         correlationId,
       });
+      logger.info('posts.like.ok', { postId: postToLike.id, userId: user.id, correlationId });
     } else {
       logger.info('like.idempotent_noop', { postId: postToLike.id, userId: user.id, correlationId });
     }
@@ -277,6 +301,7 @@ export const unlikePost = async (req: Request, res: Response) => {
         action: 'unlike',
         correlationId,
       });
+      logger.info('posts.unlike.ok', { postId: postToUnlike.id, userId: user.id, correlationId });
     } else {
       logger.info('unlike.idempotent_noop', {
         postId: postToUnlike.id,

@@ -21,7 +21,7 @@ Checklist verbal alineado al código entregado. No memorices definiciones: **se�
 
 Diagrama: `docs/architecture.md`
 
-**JWT compartido:** HS256 + `JWT_SECRET` en `.env`. Identity firma; Posts verifica sin llamar a Identity en cada request (salvo health probe).
+**JWT RS256:** Identity firma con llave privada PEM; Posts verifica con la pública (`./certs`). No se comparte el secreto de firma.
 
 ## Minuto 15–25 — Flujo funcional
 

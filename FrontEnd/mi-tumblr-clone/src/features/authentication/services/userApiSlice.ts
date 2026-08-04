@@ -78,7 +78,11 @@ export const userApiSlice = createApi({
       invalidatesTags: [{ type: 'User', id: 'ME' }],
     }),
     registerUser: builder.mutation<
-      { status: boolean; statusDescription: string; data: { token: string; user: User } },
+      {
+        status: boolean;
+        statusDescription: string;
+        data: { userId: string; alias: string; message: string };
+      },
       UserRegistrationData
     >({
       query: (userInfo) => ({
@@ -86,17 +90,17 @@ export const userApiSlice = createApi({
         method: 'POST',
         body: userInfo,
       }),
-      transformResponse: (response: IdentityAuthResponse) => ({
+      transformResponse: (response: {
+        userId: string;
+        alias: string;
+        message: string;
+      }) => ({
         status: true,
-        statusDescription: 'Registration successful.',
+        statusDescription: response.message || 'Usuario creado.',
         data: {
-          token: response.token,
-          user: {
-            id: response.userId,
-            username: response.alias,
-            alias: response.alias,
-            displayName: response.alias,
-          },
+          userId: response.userId,
+          alias: response.alias,
+          message: response.message,
         },
       }),
       transformErrorResponse: (response) =>

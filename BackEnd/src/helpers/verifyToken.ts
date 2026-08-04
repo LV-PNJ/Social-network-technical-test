@@ -1,4 +1,6 @@
-﻿import jwt from 'jsonwebtoken';
+﻿import { readFileSync } from 'fs';
+import path from 'path';
+import jwt from 'jsonwebtoken';
 import { AppConfig } from '../config/appConfig';
 
 export type IdentityTokenPayload = {
@@ -7,11 +9,21 @@ export type IdentityTokenPayload = {
   role?: string;
   iat?: number;
   exp?: number;
+  iss?: string;
+};
+
+const loadPublicKey = (): string => {
+  if (AppConfig.jwtPublicKey) {
+    return AppConfig.jwtPublicKey;
+  }
+  return readFileSync(path.join(__dirname, '../config/keys/public.key'), 'utf8');
 };
 
 export const tokenVerify = (token: string): IdentityTokenPayload => {
-  const payload = jwt.verify(token, AppConfig.jwtSecret, {
-    algorithms: ['HS256'],
+  const publicKey = loadPublicKey();
+  const payload = jwt.verify(token, publicKey, {
+    algorithms: ['RS256'],
+    issuer: AppConfig.jwtIssuer,
   });
 
   if (typeof payload !== 'object' || payload === null || !payload.sub) {
@@ -31,5 +43,6 @@ export const tokenVerify = (token: string): IdentityTokenPayload => {
       : 'user',
     iat: (payload as jwt.JwtPayload).iat,
     exp: (payload as jwt.JwtPayload).exp,
+    iss: (payload as jwt.JwtPayload).iss,
   };
 };

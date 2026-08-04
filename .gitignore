@@ -48,6 +48,9 @@ FrontEnd/mi-tumblr-clone/Example/
 **/.env
 !**/.env.example
 BackEnd/src/config/keys/*.key
+certs/*.key
+certs/*.pem
+**/resources/certs/*.key
 *.pem
 *.p12
 /BackEnd/nbproject/private/

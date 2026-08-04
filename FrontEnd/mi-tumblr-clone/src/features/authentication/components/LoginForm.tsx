@@ -37,9 +37,12 @@ export default function LoginForm() {
 
     try {
       const result = await loginUserMutation(loginData).unwrap();
-      if (result.status && result.data?.token && result.data?.user) {
+      if (result.status && result.data?.token) {
+        // Sesión basada en JWT: se guarda el Bearer y /profiles/me lo valida
         setStoredToken(result.data.token);
-        setStoredUser(result.data.user);
+        if (result.data.user) {
+          setStoredUser(result.data.user);
+        }
         if (checkAuthStatus) await checkAuthStatus();
         navigate(from, { replace: true });
       } else {

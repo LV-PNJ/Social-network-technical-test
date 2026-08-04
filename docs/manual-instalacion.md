@@ -37,8 +37,9 @@ Editar `.env` (mínimo):
 POSTGRES_USER=admin
 POSTGRES_PASSWORD=<contraseña-segura>
 POSTGRES_DB=devx
-JWT_SECRET=<cadena-secreta-de-al-menos-32-caracteres>
+# JWT RS256 — ver carpeta certs/ (private.key solo Identity; public.key también Posts)
 JWT_EXPIRATION_MS=3600000
+JWT_ISSUER=identity-service
 CORS_ORIGINS=*
 ```
 

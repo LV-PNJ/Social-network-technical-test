@@ -6,7 +6,8 @@
 |------|----------|---------|
 | Identity | Java 17 + Spring Boot | Requisito obligatorio del PDF; dominio auth/perfiles |
 | Posts | Node.js + Express + TypeORM | Asincronía y WebSocket simples para likes |
-| JWT | HS256 compartido (`JWT_SECRET`) | Verificación local en Posts sin acoplar a session store |
+| JWT | RS256 (RSA PEM) | Identity firma con privada; Posts verifica con pública |
+
 | Realtime | WebSocket en Posts | Menos infra que MQTT; suficiente para demo de likes |
 | DB | PostgreSQL + schema `identity` | ORM + Flyway en Identity; TypeORM synchronize en Posts |
 | Frontend | React (opcional) | UX; no reemplaza Java/Node |
@@ -62,7 +63,7 @@ sequenceDiagram
   U->>FE: alias + password
   FE->>ID: POST /api/auth/login
   ID->>DB: buscar usuario + BCrypt
-  ID-->>FE: JWT HS256 + userId/alias
+  ID-->>FE: JWT RS256 + userId/alias
   FE->>FE: guardar token
   FE->>ID: GET /api/profiles/me (Bearer)
   ID-->>FE: perfil completo
@@ -77,7 +78,7 @@ sequenceDiagram
   participant DB as Postgres
 
   FE->>P: POST /api/posts + Bearer JWT
-  P->>P: verificar JWT (HS256)
+  P->>P: verificar JWT (RS256 + public key)
   P->>DB: upsert usuario local (proyección)
   P->>DB: insert post
   P-->>FE: post creado

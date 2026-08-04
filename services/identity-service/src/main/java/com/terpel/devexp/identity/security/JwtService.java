@@ -3,41 +3,53 @@ package com.terpel.devexp.identity.security;
 import com.terpel.devexp.identity.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Date;
 import java.util.UUID;
-import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
 
-    private final JwtProperties properties;
-    private final SecretKey key;
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
-    public JwtService(JwtProperties properties) {
+    private final JwtProperties properties;
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
+
+    public JwtService(JwtProperties properties, PemKeyLoader pemKeyLoader) {
         this.properties = properties;
-        byte[] secretBytes = properties.getSecret().getBytes(StandardCharsets.UTF_8);
-        this.key = Keys.hmacShaKeyFor(secretBytes);
+        this.privateKey = pemKeyLoader.loadPrivateKey(properties.getPrivateKeyLocation());
+        this.publicKey = pemKeyLoader.loadPublicKey(properties.getPublicKeyLocation());
+        log.info(
+                "identity.jwt.ready algorithm=RS256 issuer={} privateKey={} publicKey={}",
+                properties.getIssuer(),
+                properties.getPrivateKeyLocation(),
+                properties.getPublicKeyLocation()
+        );
     }
 
     public String issueToken(UUID userId, String alias) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + properties.getExpirationMs());
         return Jwts.builder()
+                .issuer(properties.getIssuer())
                 .subject(userId.toString())
                 .claim("alias", alias)
                 .claim("role", "user")
                 .issuedAt(now)
                 .expiration(exp)
-                .signWith(key)
+                .signWith(privateKey, Jwts.SIG.RS256)
                 .compact();
     }
 
     public Claims parse(String token) {
         return Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(publicKey)
+                .requireIssuer(properties.getIssuer())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

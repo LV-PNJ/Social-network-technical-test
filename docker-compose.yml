@@ -31,9 +31,13 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-devexp}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      JWT_SECRET: ${JWT_SECRET:-devexp-change-me-use-at-least-32-chars!!}
+      JWT_PRIVATE_KEY_LOCATION: ${JWT_PRIVATE_KEY_LOCATION:-file:/app/certs/private.key}
+      JWT_PUBLIC_KEY_LOCATION: ${JWT_PUBLIC_KEY_LOCATION:-file:/app/certs/public.key}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      JWT_ISSUER: ${JWT_ISSUER:-identity-service}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    volumes:
+      - ./certs:/app/certs:ro
     depends_on:
       db:
         condition: service_healthy
@@ -53,8 +57,10 @@ services:
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASS: ${POSTGRES_PASSWORD:-postgres}
       DB_NAME: ${POSTGRES_DB:-devexp}
-      JWT_SECRET: ${JWT_SECRET:-devexp-change-me-use-at-least-32-chars!!}
+      JWT_ISSUER: ${JWT_ISSUER:-identity-service}
       IDENTITY_URL: http://identity:8081
+    volumes:
+      - ./certs/public.key:/app/src/config/keys/public.key:ro
     depends_on:
       db:
         condition: service_healthy
