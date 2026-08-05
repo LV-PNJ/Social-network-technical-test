@@ -1,4 +1,4 @@
-# Social Network Technical Test (DEVEXP v2)
+# Social Network Technical Test (DEVEXP)
 
 Red social en **microservicios** (Java + Node) para la prueba técnica Full Stack DEVEXP.
 
@@ -97,6 +97,7 @@ docker compose exec identity sh -c "echo 'usar mvnw test en build stage / JDK 17
 
 Si Identity o Posts no responden, el frontend muestra un **banner** y mensajes controlados (sin stack traces).  
 `GET /api/health` en Posts incluye `dependencies.identity` y puede responder `degraded`.
+<img width="1366" height="720" alt="image" src="https://github.com/user-attachments/assets/166c4459-c7ea-4422-87bb-f64536564d87" />
 
 ## Secretos
 
