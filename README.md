@@ -79,6 +79,7 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 <img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/373becee-2654-438e-9f07-a3f2c592dfed" />
 
 5. Ver perfil (nombres, apellidos, fecha, alias)
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/c70f36c2-9cf6-4037-a84a-66c5702e7340" />
 
 ## Tests
 
