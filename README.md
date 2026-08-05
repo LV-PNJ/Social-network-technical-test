@@ -22,7 +22,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Secretos: [docs/secrets.md](docs/secrets.md). Las llaves en `BackEnd/certs/` están gitignored.
+Secretos: Las llaves en `BackEnd/certs/` están gitignored.
 Espera a que Identity esté `healthy` (~30–60s la primera vez).
 
 ### Usuario demo
@@ -31,6 +31,8 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 |-------|-------|
 | Alias | `demo` |
 | Password | `Demo123!` |
+
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/feb19f67-99d0-4c43-a5cb-16bfea67fe05" />
 
 ## URLs
 
@@ -67,9 +69,16 @@ Espera a que Identity esté `healthy` (~30–60s la primera vez).
 ## Flujo happy path
 
 1. Abrir http://localhost:3000 → Login con `demo` / `Demo123!`
-2. Crear una publicación
-3. Dar like (otra pestaña verá el contador vía MQTT)
-4. Ver perfil (nombres, apellidos, fecha, alias)
+   <img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/3f16cacf-9bdb-41de-bb45-748d47770a48" />
+
+3. Crear una publicación
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/64a21f98-9ffd-4230-96f2-38bed7cd1fc1" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/a7ea21ed-ae78-4cd5-8333-68757989b191" />
+
+4. Dar like (otra pestaña verá el contador vía MQTT)
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/373becee-2654-438e-9f07-a3f2c592dfed" />
+
+5. Ver perfil (nombres, apellidos, fecha, alias)
 
 ## Tests
 
